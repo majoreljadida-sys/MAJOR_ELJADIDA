@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s https://www.strava.com/api/v3/clubs/2075788 -H 'Authorization: Bearer f8e92a8735b036195bdca9d87d4d5419afab7a45')",
+      "Bash(npx tsc:*)"
+    ]
+  }
+}

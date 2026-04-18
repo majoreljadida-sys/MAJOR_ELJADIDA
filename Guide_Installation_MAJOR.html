@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Guide d'installation — Club MAJOR</title>
+  <style>
+    body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; color: #1a1a1a; margin: 2.5cm; line-height: 1.6; }
+    .header { text-align: center; border-bottom: 3px solid #2D8C6E; padding-bottom: 18px; margin-bottom: 28px; }
+    .header h1 { font-size: 22pt; color: #1A5C47; margin: 0 0 6px; letter-spacing: 1px; }
+    .header .subtitle { font-size: 12pt; color: #555; margin: 0; }
+    .header .date { font-size: 10pt; color: #888; margin-top: 6px; }
+    h2 { font-size: 14pt; color: #1A5C47; background-color: #EAF5F0; border-left: 5px solid #2D8C6E; padding: 8px 14px; margin-top: 28px; margin-bottom: 10px; page-break-after: avoid; }
+    h3 { font-size: 11pt; color: #2D8C6E; margin-top: 16px; margin-bottom: 6px; }
+    p { margin: 6px 0; }
+    ol { margin: 8px 0 8px 20px; padding: 0; }
+    ol li { margin-bottom: 6px; }
+    ul { margin: 8px 0 8px 20px; padding: 0; }
+    ul li { margin-bottom: 4px; list-style-type: disc; }
+    .cmd { display: block; background-color: #1a1a1a; color: #4CAF82; font-family: "Courier New", Courier, monospace; font-size: 10pt; padding: 10px 16px; margin: 10px 0; border-radius: 4px; border-left: 4px solid #2D8C6E; }
+    code { font-family: "Courier New", Courier, monospace; font-size: 10pt; background-color: #f0f0f0; padding: 1px 5px; border-radius: 3px; color: #c0392b; }
+    .info { background-color: #E8F4FD; border-left: 4px solid #3498DB; padding: 10px 14px; margin: 10px 0; font-size: 10.5pt; color: #1a3a5c; }
+    .warning { background-color: #FEF9E7; border-left: 4px solid #F39C12; padding: 10px 14px; margin: 10px 0; font-size: 10.5pt; color: #5d4037; }
+    .success { background-color: #EAFAF1; border-left: 4px solid #27AE60; padding: 10px 14px; margin: 10px 0; font-size: 10.5pt; color: #1a4a2e; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 10.5pt; }
+    th { background-color: #1A5C47; color: white; padding: 8px 12px; text-align: left; font-weight: bold; }
+    td { padding: 7px 12px; border-bottom: 1px solid #ddd; }
+    tr:nth-child(even) td { background-color: #F5FAF8; }
+    hr { border: none; border-top: 1px solid #ddd; margin: 24px 0; }
+    .badge { display: inline-block; background-color: #2D8C6E; color: white; font-size: 9.5pt; padding: 2px 10px; border-radius: 12px; margin-left: 8px; font-weight: bold; }
+    .step-num { display: inline-block; background-color: #2D8C6E; color: white; width: 22px; height: 22px; border-radius: 50%; text-align: center; line-height: 22px; font-size: 11pt; font-weight: bold; margin-right: 8px; }
+    .footer { margin-top: 40px; padding-top: 14px; border-top: 2px solid #2D8C6E; text-align: center; font-size: 9.5pt; color: #888; }
+    .optional { background-color: #F3F0FF; border-left: 4px solid #7C3AED; padding: 10px 14px; margin: 10px 0; font-size: 10.5pt; color: #3730a3; }
+    @media print { h2 { page-break-before: auto; } .cmd { page-break-inside: avoid; } }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>&#9654; GUIDE D'INSTALLATION</h1>
+  <p class="subtitle">Application Web — <strong>Club MAJOR</strong> · El Jadida (Mazagan)</p>
+  <p class="date">Guide destiné aux non-développeurs · Avril 2026</p>
+</div>
+
+<p>Ce guide vous explique, <strong>pas à pas et sans jargon technique</strong>, comment installer et lancer l'application Club MAJOR sur votre ordinateur Windows.</p>
+
+<div class="warning">
+  &#9200; <strong>Durée estimée :</strong> entre 30 et 45 minutes la première fois. Les fois suivantes, il faut moins de 30 secondes pour relancer l'application.
+</div>
+
+<hr />
+
+<!-- ÉTAPE 1 -->
+<h2><span class="step-num">1</span> Installer Node.js <span class="badge">5 min</span></h2>
+
+<p>Node.js est le <em>moteur</em> qui permet à l'application de fonctionner sur votre ordinateur.</p>
+
+<ol>
+  <li>Ouvrez votre navigateur (Chrome, Edge, Firefox) et allez sur <strong>nodejs.org</strong></li>
+  <li>Cliquez sur le gros bouton vert <strong>"LTS"</strong> (c'est la version stable recommandée)</li>
+  <li>Lancez le fichier téléchargé et cliquez <strong>Suivant</strong> jusqu'à la fin sans rien modifier</li>
+  <li><strong>Redémarrez votre ordinateur</strong> après l'installation</li>
+</ol>
+
+<h3>Vérification</h3>
+<p>Ouvrez le menu <strong>Démarrer</strong>, tapez <code>cmd</code>, appuyez sur Entrée. Dans la fenêtre noire, tapez :</p>
+<span class="cmd">node --version</span>
+<div class="success">&#10003; Si vous voyez quelque chose comme <code>v20.11.0</code>, Node.js est bien installé.</div>
+
+<hr />
+
+<!-- ÉTAPE 2 -->
+<h2><span class="step-num">2</span> Installer PostgreSQL (la base de données) <span class="badge">10 min</span></h2>
+
+<p>PostgreSQL est le logiciel qui stocke toutes les données du club (membres, paiements, événements...).</p>
+
+<ol>
+  <li>Allez sur <strong>postgresql.org/download/windows</strong></li>
+  <li>Cliquez sur <strong>"Download the installer"</strong></li>
+  <li>Téléchargez la version la plus récente pour Windows (64-bit)</li>
+  <li>Lancez l'installateur et suivez ces instructions :
+    <ul>
+      <li>Laissez tous les composants cochés par défaut</li>
+      <li>Dossier d'installation : laissez le chemin proposé</li>
+      <li>À l'étape <strong>Password</strong> : tapez un mot de passe — par exemple <code>Major2025</code></li>
+      <li>&#9888; <strong>Notez ce mot de passe</strong>, vous en aurez besoin à l'étape 5 !</li>
+      <li>Port : laissez <code>5432</code></li>
+      <li>Locale : laissez la valeur par défaut</li>
+      <li>Cliquez <strong>Suivant</strong> puis <strong>Finish</strong></li>
+    </ul>
+  </li>
+  <li>À la dernière fenêtre, <strong>décochez</strong> "Launch Stack Builder" et cliquez Terminer</li>
+</ol>
+
+<div class="success">&#10003; Pour vérifier : cherchez <strong>pgAdmin</strong> dans le menu Démarrer. Si l'application s'ouvre, PostgreSQL est installé.</div>
+
+<hr />
+
+<!-- ÉTAPE 3 -->
+<h2><span class="step-num">3</span> Créer la base de données du club <span class="badge">3 min</span></h2>
+
+<ol>
+  <li>Ouvrez <strong>pgAdmin</strong> depuis le menu Démarrer</li>
+  <li>Au premier lancement, il vous demande un "master password" — choisissez ce que vous voulez et notez-le</li>
+  <li>Dans la colonne de gauche, déroulez : <strong>Servers → PostgreSQL → Databases</strong></li>
+  <li>Faites un <strong>clic droit</strong> sur <strong>Databases</strong> → <strong>Create → Database...</strong></li>
+  <li>Dans le champ <strong>Database</strong>, tapez exactement : <code>clubmajor</code></li>
+  <li>Cliquez <strong>Save</strong></li>
+</ol>
+
+<div class="success">&#10003; La base de données <strong>clubmajor</strong> apparaît dans la liste à gauche.</div>
+
+<hr />
+
+<!-- ÉTAPE 4 -->
+<h2><span class="step-num">4</span> Localiser le dossier du projet</h2>
+
+<p>Le projet se trouve dans le dossier <code>e:\Site_Major</code> sur votre ordinateur.</p>
+
+<div class="info">&#8505; Si vous souhaitez déplacer ce dossier, faites-le maintenant avant de continuer.</div>
+
+<hr />
+
+<!-- ÉTAPE 5 -->
+<h2><span class="step-num">5</span> Créer le fichier de configuration (.env) <span class="badge">5 min</span></h2>
+
+<p>Ce fichier indique à l'application comment se connecter à votre base de données.</p>
+
+<ol>
+  <li>Ouvrez le dossier <code>Site_Major</code> dans l'Explorateur de fichiers</li>
+  <li>Vous verrez un fichier nommé <code>.env.example</code></li>
+  <li>Faites un <strong>clic droit</strong> dessus → <strong>Copier</strong></li>
+  <li>Faites <strong>clic droit</strong> dans un espace vide → <strong>Coller</strong></li>
+  <li>Renommez la copie en <code>.env</code> (supprimez le <code>.example</code>)</li>
+</ol>
+
+<div class="warning">
+  &#9888; Si Windows refuse un nom commençant par un point : ouvrez le <strong>Bloc-notes</strong>, faites <strong>Fichier → Enregistrer sous</strong>, naviguez jusqu'au dossier <code>Site_Major</code>, tapez <code>.env</code> dans "Nom de fichier", choisissez <strong>Tous les fichiers (*.*)</strong> dans "Type", puis Enregistrer.
+</div>
+
+<ol start="6">
+  <li>Ouvrez le fichier <code>.env</code> avec le Bloc-notes</li>
+  <li>Trouvez la ligne <code>DATABASE_URL</code> et remplacez <code>VOTRE_MOT_DE_PASSE</code> par le mot de passe choisi à l'étape 2 :</li>
+</ol>
+
+<span class="cmd">DATABASE_URL="postgresql://postgres:Major2025@localhost:5432/clubmajor"
+NEXTAUTH_SECRET="MajorClub2025SecretKeyElJadidaMaroc"
+NEXTAUTH_URL="http://localhost:3000"</span>
+
+<div class="info">
+  &#8505; Remplacez <code>Major2025</code> par le mot de passe exact que vous avez choisi lors de l'installation de PostgreSQL.<br />
+  Les autres lignes (<code>NEXTAUTH_SECRET</code>, <code>NEXTAUTH_URL</code>) peuvent rester telles quelles.
+</div>
+
+<ol start="8">
+  <li>Sauvegardez le fichier (Ctrl+S) et fermez le Bloc-notes</li>
+</ol>
+
+<hr />
+
+<!-- ÉTAPE 6 -->
+<h2><span class="step-num">6</span> Ouvrir le terminal dans le bon dossier</h2>
+
+<ol>
+  <li>Ouvrez l'<strong>Explorateur de fichiers</strong></li>
+  <li>Naviguez jusqu'au dossier <code>Site_Major</code></li>
+  <li>Cliquez dans la <strong>barre d'adresse</strong> en haut</li>
+  <li>Tapez <code>cmd</code> et appuyez sur <strong>Entrée</strong></li>
+</ol>
+
+<div class="success">&#10003; Une fenêtre noire s'ouvre avec <code>e:\Site_Major&gt;</code> au début. C'est parfait.</div>
+
+<hr />
+
+<!-- ÉTAPE 7 -->
+<h2><span class="step-num">7</span> Installer les dépendances du projet <span class="badge">5 min</span></h2>
+
+<p>Dans le terminal, tapez la commande suivante et appuyez sur <strong>Entrée</strong> :</p>
+
+<span class="cmd">npm install --legacy-peer-deps</span>
+
+<div class="info">
+  &#8505; Beaucoup de texte va défiler pendant 2 à 5 minutes. C'est normal — l'application télécharge les bibliothèques nécessaires. Attendez que le curseur réapparaisse.
+</div>
+
+<div class="success">&#10003; Quand c'est terminé, vous reverrez <code>e:\Site_Major&gt;</code> et un message du type <em>"added 500 packages"</em>.</div>
+
+<hr />
+
+<!-- ÉTAPE 8 -->
+<h2><span class="step-num">8</span> Créer les tables de la base de données <span class="badge">2 min</span></h2>
+
+<p>Cette commande applique toute la structure de la base de données :</p>
+
+<span class="cmd">npx prisma migrate deploy</span>
+
+<div class="success">&#10003; Vous verrez <em>"All migrations have been successfully applied"</em>. Les tables sont créées.</div>
+
+<div class="info">
+  &#8505; Si vous voyez une erreur de connexion, vérifiez que le mot de passe dans le fichier <code>.env</code> est bien identique à celui choisi lors de l'installation de PostgreSQL (étape 2).
+</div>
+
+<hr />
+
+<!-- ÉTAPE 9 -->
+<h2><span class="step-num">9</span> Remplir avec les données de démonstration <span class="badge">1 min</span></h2>
+
+<p>Cette commande crée les comptes de démonstration, les membres, événements, articles de blog, etc. :</p>
+
+<span class="cmd">npx prisma db seed</span>
+
+<div class="success">&#10003; Vous verrez des messages de confirmation : <em>"✅ Membres créés", "✅ Événements créés"...</em></div>
+
+<div class="warning">
+  &#9888; Si vous voyez l'erreur <code>command not found: tsx</code>, tapez d'abord <code>npm install tsx --save-dev</code> puis relancez <code>npx prisma db seed</code>.
+</div>
+
+<hr />
+
+<!-- ÉTAPE 10 -->
+<h2><span class="step-num">10</span> Lancer l'application ! <span class="badge">&#9654;</span></h2>
+
+<span class="cmd">npm run dev</span>
+
+<p>Après quelques secondes, vous verrez :</p>
+
+<span class="cmd" style="color:#3ABFBF;">&#9654; Next.js 14
+- Local: http://localhost:3000
+- Ready in 2.1s</span>
+
+<div class="success">
+  &#127881; <strong>L'application est lancée !</strong> Ouvrez votre navigateur et allez sur :<br /><br />
+  &nbsp;&nbsp;&nbsp;&nbsp;<strong style="font-size:13pt; color:#1A5C47;">http://localhost:3000</strong>
+</div>
+
+<hr />
+
+<!-- COMPTES -->
+<h2>&#128272; Comptes de connexion (démonstration)</h2>
+
+<table>
+  <thead>
+    <tr><th>Rôle</th><th>Email</th><th>Mot de passe</th><th>Accès</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Administrateur</strong></td>
+      <td>admin@clubmajor.ma</td>
+      <td>Admin@Major2025</td>
+      <td>Tout le site — dashboard, membres, paiements, blog…</td>
+    </tr>
+    <tr>
+      <td><strong>Coach</strong></td>
+      <td>youssef.coach@clubmajor.ma</td>
+      <td>Coach@2025</td>
+      <td>Espace coach — séances, groupes</td>
+    </tr>
+    <tr>
+      <td><strong>Membre</strong></td>
+      <td>mohammed.alami@email.ma</td>
+      <td>Member@2025</td>
+      <td>Espace membre — paiements, événements, profil</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="info">
+  &#8505; D'autres membres de démonstration sont disponibles : <code>sara.benali@email.ma</code>, <code>karim.tazi@email.ma</code>, etc. — tous avec le mot de passe <code>Member@2025</code>.
+</div>
+
+<hr />
+
+<!-- RELANCER -->
+<h2>&#128257; Relancer l'application les prochaines fois</h2>
+
+<p>Vous n'avez <strong>plus besoin</strong> de refaire toutes ces étapes. À partir de maintenant :</p>
+
+<ol>
+  <li>Ouvrir l'Explorateur de fichiers → aller dans le dossier <code>Site_Major</code></li>
+  <li>Cliquer dans la barre d'adresse → taper <code>cmd</code> → Entrée</li>
+  <li>Taper <code>npm run dev</code> → Entrée</li>
+  <li>Ouvrir <strong>http://localhost:3000</strong> dans le navigateur</li>
+</ol>
+
+<div class="warning">
+  &#9888; La fenêtre noire (terminal) doit rester ouverte tant que vous utilisez l'application. Si vous la fermez, l'application s'arrête.
+</div>
+
+<hr />
+
+<!-- OPTIONS -->
+<h2>&#9881; Fonctionnalités optionnelles</h2>
+
+<h3>Emails automatiques (notifications)</h3>
+<p>Pour activer l'envoi d'emails (confirmation d'inscription, validation de compte, rappels de paiement) :</p>
+<ol>
+  <li>Créez un <strong>Mot de passe d'application Gmail</strong> : allez sur <strong>myaccount.google.com</strong> → Sécurité → Validation en 2 étapes → Mots de passe des applications → Créer "Club MAJOR"</li>
+  <li>Ouvrez le fichier <code>.env</code> et remplissez les lignes SMTP :</li>
+</ol>
+<span class="cmd">SMTP_USER="votre.adresse@gmail.com"
+SMTP_PASS="xxxx xxxx xxxx xxxx"
+EMAIL_FROM="Club MAJOR &lt;votre.adresse@gmail.com&gt;"</span>
+<div class="info">&#8505; Tant que SMTP n'est pas configuré, les emails sont simplement ignorés — le site fonctionne normalement.</div>
+
+<h3>Intégration Strava</h3>
+<p>Pour afficher les activités du club Strava sur la page <code>/strava</code>, renseignez dans <code>.env</code> :</p>
+<span class="cmd">STRAVA_CLIENT_ID="votre_id"
+STRAVA_CLIENT_SECRET="votre_secret"
+STRAVA_REFRESH_TOKEN="votre_token"</span>
+<div class="info">&#8505; Ces informations se trouvent sur <strong>strava.com/settings/api</strong> après création d'une application Strava.</div>
+
+<hr />
+
+<!-- PROBLÈMES -->
+<h2>&#128295; Problèmes fréquents et solutions</h2>
+
+<table>
+  <thead>
+    <tr><th>Message d'erreur</th><th>Cause probable</th><th>Solution</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>'node' n'est pas reconnu</code></td>
+      <td>Node.js pas installé correctement</td>
+      <td>Réinstaller Node.js (étape 1) et redémarrer le PC</td>
+    </tr>
+    <tr>
+      <td><code>password authentication failed</code></td>
+      <td>Mauvais mot de passe PostgreSQL dans .env</td>
+      <td>Vérifier le mot de passe dans <code>.env</code> (ligne DATABASE_URL)</td>
+    </tr>
+    <tr>
+      <td><code>database "clubmajor" does not exist</code></td>
+      <td>La base de données n'a pas été créée</td>
+      <td>Refaire l'étape 3 dans pgAdmin</td>
+    </tr>
+    <tr>
+      <td><code>All migrations already applied</code></td>
+      <td>Normal si déjà installé</td>
+      <td>Pas d'action nécessaire, continuez à l'étape 9</td>
+    </tr>
+    <tr>
+      <td><code>Port 3000 is already in use</code></td>
+      <td>Une autre application utilise le port 3000</td>
+      <td>Taper : <code>npm run dev -- --port 3001</code> puis aller sur http://localhost:3001</td>
+    </tr>
+    <tr>
+      <td><code>Cannot find module</code></td>
+      <td>npm install pas fait ou incomplet</td>
+      <td>Relancer <code>npm install --legacy-peer-deps</code> (étape 7)</td>
+    </tr>
+    <tr>
+      <td><code>EPERM: operation not permitted</code></td>
+      <td>Prisma bloqué par un processus actif</td>
+      <td>Arrêter <code>npm run dev</code> (Ctrl+C dans le terminal) puis relancer la commande</td>
+    </tr>
+    <tr>
+      <td>Page blanche ou erreur rouge</td>
+      <td>npm run dev ne tourne pas</td>
+      <td>Vérifier que le terminal est ouvert et relancer <code>npm run dev</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="footer">
+  <p><strong>Club MAJOR</strong> — Mazagan Athlétisme Jogging And Organisation</p>
+  <p>El Jadida (Mazagan), Maroc &nbsp;·&nbsp; contact@clubmajor.ma</p>
+  <p style="margin-top:6px; font-size:9pt;">Document v2.0 — Avril 2026</p>
+</div>
+
+</body>
+</html>

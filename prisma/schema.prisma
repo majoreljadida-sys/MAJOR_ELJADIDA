@@ -1,0 +1,380 @@
+// ============================================================
+// Schéma Prisma — Club MAJOR
+// Mazagan Athlétisme Jogging And Organisation
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Énumérations ─────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  COACH
+  MEMBER
+}
+
+enum MemberStatus {
+  ACTIVE
+  EXPIRED
+  SUSPENDED
+  PENDING
+  INACTIVE
+}
+
+enum TshirtSize {
+  XS
+  S
+  M
+  L
+  XL
+  XXL
+}
+
+enum MemberCategory {
+  LOISIR
+  COMPETITION
+  JUNIOR
+  VETERAN
+  SENIOR
+}
+
+enum TrainingType {
+  ENDURANCE_FONDAMENTALE
+  FRACTIONNE
+  SORTIE_LONGUE
+  PREPARATION_COMPETITION
+  RECUPERATION
+  RENFORCEMENT
+}
+
+enum SessionStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum EventType {
+  COURSE_OFFICIELLE
+  COMPETITION
+  SORTIE_RUNNING
+  STAGE
+  REGROUPEMENT
+  EVENEMENT_CLUB
+}
+
+enum EventStatus {
+  UPCOMING
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentType {
+  COTISATION_ANNUELLE
+  COTISATION_MENSUELLE
+  EVENEMENTIELLE
+}
+
+enum PaymentStatus {
+  PAID
+  PENDING
+  LATE
+  CANCELLED
+}
+
+enum RegistrationStatus {
+  CONFIRMED
+  WAITING
+  CANCELLED
+}
+
+enum Priority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum NotificationType {
+  INFO
+  WARNING
+  SUCCESS
+  ERROR
+}
+
+// ── Modèles ───────────────────────────────────────────────────
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  password      String
+  role          Role           @default(MEMBER)
+  member        Member?
+  coach         Coach?
+  notifications Notification[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@map("users")
+}
+
+model Member {
+  id             String              @id @default(cuid())
+  userId         String              @unique
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName      String
+  lastName       String
+  dateOfBirth    DateTime?
+  placeOfBirth   String?
+  phone          String?
+  photo          String?
+  tshirtSize        TshirtSize?
+  medicalCertUrl    String?
+  medicalCertExpiry DateTime?
+  status            MemberStatus        @default(ACTIVE)
+  category       MemberCategory?
+  level          String?
+  licenseNumber  String?             @unique
+  groupId        String?
+  group          TrainingGroup?      @relation(fields: [groupId], references: [id])
+  payments       Payment[]
+  registrations  EventRegistration[]
+  attendances    Attendance[]
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@map("members")
+}
+
+model Coach {
+  id        String            @id @default(cuid())
+  userId    String            @unique
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName String
+  lastName  String
+  specialty String?
+  bio       String?
+  photo     String?
+  phone     String?
+  groups    TrainingGroup[]
+  sessions  TrainingSession[]
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  @@map("coaches")
+}
+
+model TrainingGroup {
+  id          String            @id @default(cuid())
+  name        String
+  description String?
+  level       String?
+  coachId     String?
+  coach       Coach?            @relation(fields: [coachId], references: [id])
+  members     Member[]
+  sessions    TrainingSession[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@map("training_groups")
+}
+
+model TrainingSession {
+  id              String          @id @default(cuid())
+  title           String
+  date            DateTime
+  location        String
+  type            TrainingType
+  description     String?
+  distance        Float?          // km
+  duration        Int?            // minutes
+  coachId         String?
+  coach           Coach?          @relation(fields: [coachId], references: [id])
+  groupId         String?
+  group           TrainingGroup?  @relation(fields: [groupId], references: [id])
+  maxParticipants Int?
+  status          SessionStatus   @default(SCHEDULED)
+  attendances     Attendance[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@map("training_sessions")
+}
+
+model Attendance {
+  id        String          @id @default(cuid())
+  memberId  String
+  member    Member          @relation(fields: [memberId], references: [id])
+  sessionId String
+  session   TrainingSession @relation(fields: [sessionId], references: [id])
+  present   Boolean         @default(false)
+  notes     String?
+  createdAt DateTime        @default(now())
+
+  @@unique([memberId, sessionId])
+  @@map("attendances")
+}
+
+model Event {
+  id              String              @id @default(cuid())
+  title           String
+  slug            String              @unique
+  description     String
+  date            DateTime
+  endDate         DateTime?
+  location        String
+  city            String?
+  type            EventType
+  maxParticipants Int?
+  imageUrl        String?
+  price           Float?
+  distance        String?             // ex: "10 km", "Semi-marathon"
+  videoUrl        String?             // URL YouTube de la vidéo du compte-rendu
+  status          EventStatus         @default(UPCOMING)
+  registrations   EventRegistration[]
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@map("events")
+}
+
+model EventRegistration {
+  id        String             @id @default(cuid())
+  memberId  String
+  member    Member             @relation(fields: [memberId], references: [id])
+  eventId   String
+  event     Event              @relation(fields: [eventId], references: [id])
+  status    RegistrationStatus @default(CONFIRMED)
+  bib       String?            // Numéro de dossard
+  notes     String?
+  createdAt DateTime           @default(now())
+
+  @@unique([memberId, eventId])
+  @@map("event_registrations")
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  memberId      String
+  member        Member        @relation(fields: [memberId], references: [id])
+  amount        Float
+  type          PaymentType
+  status        PaymentStatus @default(PENDING)
+  dueDate       DateTime?
+  paidDate      DateTime?
+  receiptNumber String?
+  season        String?       // ex: "2024-2025"
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@map("payments")
+}
+
+model TrainingProgram {
+  id          String                   @id @default(cuid())
+  month       Int                      // 1-12
+  year        Int
+  title       String
+  description String?
+  whatsappGroup String?                // lien ou numéro du groupe WhatsApp
+  sessions    TrainingProgramSession[]
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
+
+  @@unique([month, year])
+  @@map("training_programs")
+}
+
+model TrainingProgramSession {
+  id           String          @id @default(cuid())
+  programId    String
+  program      TrainingProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+  dateFrom     DateTime
+  dateTo       DateTime?
+  title        String
+  description  String          @db.Text
+  type         TrainingType
+  reminderSent Boolean         @default(false)
+  createdAt    DateTime        @default(now())
+
+  @@map("training_program_sessions")
+}
+
+model Announcement {
+  id          String    @id @default(cuid())
+  title       String
+  content     String
+  priority    Priority  @default(NORMAL)
+  publishedAt DateTime  @default(now())
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@map("announcements")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  read      Boolean          @default(false)
+  type      NotificationType @default(INFO)
+  link      String?
+  createdAt DateTime         @default(now())
+
+  @@map("notifications")
+}
+
+model BlogCategory {
+  id        String     @id @default(cuid())
+  name      String
+  slug      String     @unique
+  color     String?    // ex: "#2D8C6E"
+  icon      String?
+  posts     BlogPost[]
+  createdAt DateTime   @default(now())
+
+  @@map("blog_categories")
+}
+
+model BlogPost {
+  id          String        @id @default(cuid())
+  title       String
+  slug        String        @unique
+  excerpt     String
+  content     String        @db.Text
+  coverImage  String?
+  youtubeUrl  String?       // URL vidéo YouTube (optionnelle)
+  categoryId  String?
+  category    BlogCategory? @relation(fields: [categoryId], references: [id])
+  readTime    Int?          // minutes
+  views       Int           @default(0)
+  published   Boolean       @default(false)
+  publishedAt DateTime?
+  tags        String[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@map("blog_posts")
+}
+
+model ChatbotLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  sessionId String
+  message   String
+  response  String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@map("chatbot_logs")
+}
