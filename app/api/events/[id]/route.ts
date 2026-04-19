@@ -53,6 +53,7 @@ export async function DELETE(_: Request, { params }: Ctx) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
   try {
+    await prisma.eventRegistration.deleteMany({ where: { eventId: params.id } })
     await prisma.event.delete({ where: { id: params.id } })
     return NextResponse.json({ ok: true })
   } catch (err) {
