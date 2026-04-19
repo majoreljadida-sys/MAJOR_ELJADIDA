@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Calendar, Plus, Send, Trash2, ChevronDown, ChevronUp, MessageCircle, CheckCircle } from 'lucide-react'
+import { Calendar, Plus, Send, Trash2, ChevronDown, ChevronUp, MessageCircle, CheckCircle, Pencil, X, Check } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
 
@@ -44,6 +44,11 @@ export function AdminProgramsClient({ programs: initial }: { programs: Program[]
   const [showNew, setShowNew]   = useState(false)
   const [expanded, setExpanded] = useState<string | null>(null)
   const [sending, setSending]   = useState<string | null>(null)
+  const [deletingSession, setDeletingSession] = useState<string | null>(null)
+
+  // Edition d'une séance
+  const [editingSession, setEditingSession] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState<Partial<Session>>({})
 
   // Formulaire nouveau programme
   const [form, setForm] = useState({
@@ -89,7 +94,61 @@ export function AdminProgramsClient({ programs: initial }: { programs: Program[]
     if (!confirm('Supprimer ce programme ?')) return
     await fetch(`/api/training-programs/${id}`, { method: 'DELETE' })
     setPrograms(p => p.filter(x => x.id !== id))
-    toast.success('Supprimé')
+    toast.success('Programme supprimé')
+  }
+
+  // ── Supprimer une séance
+  async function deleteSession(programId: string, sessionId: string) {
+    if (!confirm('Supprimer cette séance ?')) return
+    setDeletingSession(sessionId)
+    try {
+      const res = await fetch(`/api/training-programs/${programId}/sessions/${sessionId}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Erreur suppression')
+      setPrograms(ps => ps.map(p => p.id === programId
+        ? { ...p, sessions: p.sessions.filter(s => s.id !== sessionId) }
+        : p
+      ))
+      toast.success('Séance supprimée')
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setDeletingSession(null)
+    }
+  }
+
+  // ── Modifier une séance
+  function startEdit(s: Session) {
+    setEditingSession(s.id)
+    setEditForm({
+      dateFrom: s.dateFrom.split('T')[0],
+      dateTo:   s.dateTo ? s.dateTo.split('T')[0] : '',
+      title:    s.title,
+      description: s.description,
+      type:     s.type,
+    })
+  }
+
+  async function saveEdit(programId: string, sessionId: string) {
+    try {
+      const res = await fetch(`/api/training-programs/${programId}/sessions/${sessionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editForm),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setPrograms(ps => ps.map(p => p.id === programId
+        ? { ...p, sessions: p.sessions.map(s => s.id === sessionId
+            ? { ...s, ...editForm, dateFrom: new Date(editForm.dateFrom!).toISOString(), dateTo: editForm.dateTo ? new Date(editForm.dateTo).toISOString() : null }
+            : s)
+          }
+        : p
+      ))
+      setEditingSession(null)
+      toast.success('Séance modifiée')
+    } catch (err: any) {
+      toast.error(err.message)
+    }
   }
 
   async function sendReminder(programId: string, sessionId: string) {
@@ -102,9 +161,7 @@ export function AdminProgramsClient({ programs: initial }: { programs: Program[]
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
-      // Ouvrir WhatsApp dans un nouvel onglet
       window.open(data.waLink, '_blank')
-      // Mettre à jour l'état local
       setPrograms(ps => ps.map(p => p.id === programId ? {
         ...p,
         sessions: p.sessions.map(s => s.id === sessionId ? { ...s, reminderSent: true } : s),
@@ -124,8 +181,7 @@ export function AdminProgramsClient({ programs: initial }: { programs: Program[]
           <h1 className="font-bebas text-4xl text-white tracking-widest">PROGRAMMES D'ENTRAÎNEMENT</h1>
           <p className="text-gray-400 font-inter text-sm mt-1">Gérez et envoyez les rappels WhatsApp</p>
         </div>
-        <button onClick={() => setShowNew(!showNew)}
-          className="btn-primary flex items-center gap-2">
+        <button onClick={() => setShowNew(!showNew)} className="btn-primary flex items-center gap-2">
           <Plus size={16} /> Nouveau programme
         </button>
       </div>
@@ -134,7 +190,6 @@ export function AdminProgramsClient({ programs: initial }: { programs: Program[]
       {showNew && (
         <div className="card-dark mb-8 border-major-primary/30">
           <h2 className="font-oswald text-white text-lg uppercase tracking-wide mb-5">Nouveau programme</h2>
-
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
             <div>
               <label className="form-label">Mois</label>
@@ -152,7 +207,6 @@ export function AdminProgramsClient({ programs: initial }: { programs: Program[]
                 onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
             </div>
           </div>
-
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="form-label">Description (optionnel)</label>
@@ -163,11 +217,8 @@ export function AdminProgramsClient({ programs: initial }: { programs: Program[]
               <label className="form-label">Numéro/Lien groupe WhatsApp</label>
               <input className="input-dark" placeholder="+212600000000 ou lien wa.me/..." value={form.whatsappGroup}
                 onChange={e => setForm(f => ({ ...f, whatsappGroup: e.target.value }))} />
-              <p className="text-gray-600 text-xs font-inter mt-1">Utilisé pour les rappels automatiques</p>
             </div>
           </div>
-
-          {/* Séances */}
           <div className="border-t border-gray-800 pt-4 mt-4">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-oswald text-white uppercase tracking-wide text-sm">Séances ({sessions.length})</h3>
@@ -220,7 +271,6 @@ export function AdminProgramsClient({ programs: initial }: { programs: Program[]
               ))}
             </div>
           </div>
-
           <div className="flex gap-3 mt-5">
             <button onClick={saveProgram} disabled={saving} className="btn-primary">
               {saving ? 'Enregistrement...' : 'Enregistrer le programme'}
@@ -269,37 +319,108 @@ export function AdminProgramsClient({ programs: initial }: { programs: Program[]
                   <div className="divide-y divide-gray-800/60">
                     {p.sessions.map(s => {
                       const colorClass = TYPE_COLORS[s.type] ?? 'text-gray-400'
+                      const isEditing  = editingSession === s.id
+
                       return (
-                        <div key={s.id} className="flex items-center gap-4 px-6 py-3">
-                          <div className="min-w-[80px]">
-                            <p className="text-white text-sm font-inter font-medium">
-                              {formatDate(new Date(s.dateFrom), 'dd MMM')}
-                              {s.dateTo && ` → ${formatDate(new Date(s.dateTo), 'dd')}`}
-                            </p>
-                            <p className={`text-xs font-inter ${colorClass}`}>
-                              {TYPES.find(t => t.value === s.type)?.label}
-                            </p>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-white text-sm font-inter truncate">{s.title}</p>
-                            <p className="text-gray-500 text-xs font-inter truncate">{s.description.split('\n')[0]}</p>
-                          </div>
-                          {/* Bouton WhatsApp */}
-                          <button
-                            onClick={() => sendReminder(p.id, s.id)}
-                            disabled={sending === s.id}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-inter font-semibold transition-all ${
-                              s.reminderSent
-                                ? 'bg-green-900/20 text-green-400 border border-green-700/40'
-                                : 'bg-[#25D366]/10 text-[#25D366] border border-[#25D366]/30 hover:bg-[#25D366]/20'
-                            }`}>
-                            {s.reminderSent
-                              ? <><CheckCircle size={12} /> Envoyé</>
-                              : sending === s.id
-                                ? 'Ouverture...'
-                                : <><MessageCircle size={12} /> WhatsApp</>
-                            }
-                          </button>
+                        <div key={s.id} className="px-6 py-3">
+                          {isEditing ? (
+                            // ── Mode édition
+                            <div className="space-y-3">
+                              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                                <div>
+                                  <label className="form-label text-[10px]">Date début</label>
+                                  <input type="date" className="input-dark text-sm"
+                                    value={editForm.dateFrom as string}
+                                    onChange={e => setEditForm(f => ({ ...f, dateFrom: e.target.value }))} />
+                                </div>
+                                <div>
+                                  <label className="form-label text-[10px]">Date fin</label>
+                                  <input type="date" className="input-dark text-sm"
+                                    value={editForm.dateTo as string ?? ''}
+                                    onChange={e => setEditForm(f => ({ ...f, dateTo: e.target.value }))} />
+                                </div>
+                                <div>
+                                  <label className="form-label text-[10px]">Type</label>
+                                  <select className="input-dark text-sm"
+                                    value={editForm.type as string}
+                                    onChange={e => setEditForm(f => ({ ...f, type: e.target.value }))}>
+                                    {TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="form-label text-[10px]">Titre</label>
+                                  <input className="input-dark text-sm"
+                                    value={editForm.title as string}
+                                    onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))} />
+                                </div>
+                              </div>
+                              <div>
+                                <label className="form-label text-[10px]">Description</label>
+                                <textarea className="input-dark text-sm resize-none h-16 w-full"
+                                  value={editForm.description as string}
+                                  onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} />
+                              </div>
+                              <div className="flex gap-2">
+                                <button onClick={() => saveEdit(p.id, s.id)}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-inter font-semibold bg-major-primary/20 text-major-accent border border-major-primary/30 hover:bg-major-primary/30 transition-all">
+                                  <Check size={12} /> Enregistrer
+                                </button>
+                                <button onClick={() => setEditingSession(null)}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-inter font-semibold bg-gray-800 text-gray-400 border border-gray-700 hover:text-white transition-all">
+                                  <X size={12} /> Annuler
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            // ── Mode affichage
+                            <div className="flex items-center gap-4">
+                              <div className="min-w-[80px]">
+                                <p className="text-white text-sm font-inter font-medium">
+                                  {formatDate(new Date(s.dateFrom), 'dd MMM')}
+                                  {s.dateTo && ` → ${formatDate(new Date(s.dateTo), 'dd')}`}
+                                </p>
+                                <p className={`text-xs font-inter ${colorClass}`}>
+                                  {TYPES.find(t => t.value === s.type)?.label}
+                                </p>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-white text-sm font-inter truncate">{s.title}</p>
+                                <p className="text-gray-500 text-xs font-inter truncate">{s.description.split('\n')[0]}</p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {/* Bouton Modifier */}
+                                <button onClick={() => startEdit(s)}
+                                  className="p-1.5 text-gray-500 hover:text-major-cyan transition-colors"
+                                  title="Modifier">
+                                  <Pencil size={13} />
+                                </button>
+                                {/* Bouton Supprimer */}
+                                <button
+                                  onClick={() => deleteSession(p.id, s.id)}
+                                  disabled={deletingSession === s.id}
+                                  className="p-1.5 text-red-700 hover:text-red-400 transition-colors disabled:opacity-40"
+                                  title="Supprimer">
+                                  <Trash2 size={13} />
+                                </button>
+                                {/* Bouton WhatsApp */}
+                                <button
+                                  onClick={() => sendReminder(p.id, s.id)}
+                                  disabled={sending === s.id}
+                                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-inter font-semibold transition-all ${
+                                    s.reminderSent
+                                      ? 'bg-green-900/20 text-green-400 border border-green-700/40'
+                                      : 'bg-[#25D366]/10 text-[#25D366] border border-[#25D366]/30 hover:bg-[#25D366]/20'
+                                  }`}>
+                                  {s.reminderSent
+                                    ? <><CheckCircle size={12} /> Envoyé</>
+                                    : sending === s.id
+                                      ? 'Ouverture...'
+                                      : <><MessageCircle size={12} /> WhatsApp</>
+                                  }
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )
                     })}
