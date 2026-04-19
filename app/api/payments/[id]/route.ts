@@ -8,7 +8,7 @@ interface Params { params: { id: string } }
 
 export async function PATCH(req: Request, { params }: Params) {
   const session = await auth()
-  if (!session || session.user.role !== 'ADMIN')
+  if (!session || session.user.role?.toLowerCase() !== 'admin')
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
   const body = await req.json()

@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET(req: Request) {
   const session = await auth()
-  if (!session || (session.user.role !== 'ADMIN' && session.user.role !== 'COACH'))
+  if (!session || (session.user.role?.toLowerCase() !== 'admin' && session.user.role?.toLowerCase() !== 'coach'))
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
   const { searchParams } = new URL(req.url)

@@ -5,7 +5,7 @@ import { sendPaymentReminderEmail, sendEventReminderEmail } from '@/lib/email'
 
 export async function POST(req: Request) {
   const session = await auth()
-  if (!session || session.user.role !== 'ADMIN')
+  if (!session || session.user.role?.toLowerCase() !== 'admin')
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
   const { type } = await req.json() as { type: 'payments' | 'events' }

@@ -1,0 +1,5 @@
+const { PrismaClient } = require('@prisma/client')
+const p = new PrismaClient()
+p.trainingProgram.findMany()
+  .then(r => { r.forEach(x => console.log(x.month + '/' + x.year + ' - ' + x.title)) })
+  .finally(() => p.$disconnect())

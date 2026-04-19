@@ -11,7 +11,7 @@ export async function GET(_req: Request, { params }: Params) {
   if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
   // Members can only fetch their own profile; admins/coaches can fetch any
-  if (session.user.role === 'MEMBER' && session.user.profileId !== params.id)
+  if (session.user.role?.toLowerCase() === 'member' && session.user.profileId !== params.id)
     return NextResponse.json({ error: 'Interdit' }, { status: 403 })
 
   const member = await prisma.member.findUnique({
@@ -27,7 +27,7 @@ export async function PATCH(req: Request, { params }: Params) {
   const session = await auth()
   if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
-  const isAdmin  = session.user.role === 'ADMIN'
+  const isAdmin  = session.user.role?.toLowerCase() === 'admin'
   const isSelf   = session.user.profileId === params.id
 
   if (!isAdmin && !isSelf)
