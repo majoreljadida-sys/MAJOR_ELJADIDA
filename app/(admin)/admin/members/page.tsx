@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { formatDate, getMemberStatusColor, MEMBER_STATUS_LABELS, MEMBER_CATEGORY_LABELS } from '@/lib/utils'
-import { Users, Search, Filter } from 'lucide-react'
+import { Users } from 'lucide-react'
 import Link from 'next/link'
 import { MemberActions } from './member-actions'
 
@@ -34,11 +34,13 @@ export default async function AdminMembersPage({ searchParams }: Props) {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="font-bebas text-4xl text-white tracking-widest">GESTION DES MEMBRES</h1>
-          <p className="text-gray-400 font-inter text-sm mt-1">{members.length} membre{members.length > 1 ? 's' : ''} trouvé{members.length > 1 ? 's' : ''}</p>
+          <p className="text-gray-400 font-inter text-sm mt-1">
+            {members.length} membre{members.length > 1 ? 's' : ''} trouvé{members.length > 1 ? 's' : ''}
+          </p>
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Filtres par statut */}
       <div className="flex flex-wrap gap-3 mb-6">
         {STATUSES.map(s => {
           const count = s ? countMap[s] ?? 0 : Object.values(countMap).reduce((a, b) => a + b, 0)
@@ -55,7 +57,7 @@ export default async function AdminMembersPage({ searchParams }: Props) {
         })}
       </div>
 
-      {/* Table */}
+      {/* Tableau */}
       <div className="card-dark overflow-hidden p-0">
         <div className="overflow-x-auto">
           <table className="table-dark">
@@ -91,7 +93,7 @@ export default async function AdminMembersPage({ searchParams }: Props) {
                       </div>
                     </div>
                   </td>
-                  <td className="text-gray-400 text-xs font-mono">{m.licenseNumber}</td>
+                  <td className="text-gray-400 text-xs font-mono">{m.licenseNumber ?? '—'}</td>
                   <td className="text-gray-400 text-sm">{m.category ? MEMBER_CATEGORY_LABELS[m.category] : '—'}</td>
                   <td className="text-gray-400 text-sm">{m.group?.name ?? '—'}</td>
                   <td>
@@ -101,7 +103,12 @@ export default async function AdminMembersPage({ searchParams }: Props) {
                   </td>
                   <td className="text-gray-500 text-xs">{formatDate(m.createdAt, 'dd MMM yyyy')}</td>
                   <td>
-                    <MemberActions memberId={m.id} currentStatus={m.status} />
+                    <MemberActions
+                      memberId={m.id}
+                      currentStatus={m.status}
+                      memberName={`${m.firstName} ${m.lastName}`}
+                      memberEmail={m.user.email}
+                    />
                   </td>
                 </tr>
               ))}
