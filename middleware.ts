@@ -6,7 +6,8 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
   const isLoggedIn = !!token
-  const role = token?.role as string | undefined
+  // ✅ FIX : normaliser le rôle en minuscules pour éviter les problèmes de casse
+  const role = (token?.role as string | undefined)?.toLowerCase()
 
   // ── Espace membre (/member/*)
   if (pathname.startsWith('/member')) {
@@ -20,7 +21,7 @@ export async function middleware(req: NextRequest) {
     if (!isLoggedIn) {
       return NextResponse.redirect(new URL(`/login?callbackUrl=${pathname}`, req.url))
     }
-    if (role !== 'ADMIN' && role !== 'COACH') {
+    if (role !== 'admin' && role !== 'coach') {
       return NextResponse.redirect(new URL('/member/dashboard', req.url))
     }
   }
@@ -30,15 +31,15 @@ export async function middleware(req: NextRequest) {
     if (!isLoggedIn) {
       return NextResponse.redirect(new URL(`/login?callbackUrl=${pathname}`, req.url))
     }
-    if (role !== 'ADMIN') {
+    if (role !== 'admin') {
       return NextResponse.redirect(new URL('/member/dashboard', req.url))
     }
   }
 
   // ── Redirection si déjà connecté sur pages auth
   if ((pathname === '/login' || pathname === '/register') && isLoggedIn) {
-    if (role === 'ADMIN') return NextResponse.redirect(new URL('/admin/dashboard', req.url))
-    if (role === 'COACH') return NextResponse.redirect(new URL('/coach/dashboard', req.url))
+    if (role === 'admin') return NextResponse.redirect(new URL('/admin/dashboard', req.url))
+    if (role === 'coach') return NextResponse.redirect(new URL('/coach/dashboard', req.url))
     return NextResponse.redirect(new URL('/member/dashboard', req.url))
   }
 
