@@ -97,7 +97,7 @@ export function AdminSidebar({ variant = 'admin' }: SidebarProps) {
             <ExternalLink size={15} />
             <span className="font-inter text-xs">Voir le site public</span>
           </Link>
-          {variant === 'admin' && (
+          {variant === 'ADMIN' && (
             <Link href="/admin/settings"
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-500 hover:text-major-accent hover:bg-major-primary/10 transition-all duration-150">
               <Settings size={15} />
