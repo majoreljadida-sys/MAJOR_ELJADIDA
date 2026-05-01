@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { formatDate, getMemberStatusColor, MEMBER_STATUS_LABELS, MEMBER_CATEGORY_LABELS } from '@/lib/utils'
-import { Users } from 'lucide-react'
+import { FileCheck, FileX } from 'lucide-react'
 import Link from 'next/link'
 import { MemberActions } from './member-actions'
 
@@ -67,6 +67,7 @@ export default async function AdminMembersPage({ searchParams }: Props) {
                 <th>Licence</th>
                 <th>Catégorie</th>
                 <th>Groupe</th>
+                <th>Certificat</th>
                 <th>Statut</th>
                 <th>Inscrit le</th>
                 <th>Actions</th>
@@ -100,6 +101,18 @@ export default async function AdminMembersPage({ searchParams }: Props) {
                     <span className={`text-xs font-inter font-medium ${getMemberStatusColor(m.status)}`}>
                       {MEMBER_STATUS_LABELS[m.status]}
                     </span>
+                  </td>
+                  <td>
+                    {m.medicalCertUrl
+                      ? <a href={m.medicalCertUrl} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-green-400 hover:text-green-300 text-xs font-inter transition-colors">
+                          <FileCheck size={14} /> Voir
+                          {m.medicalCertExpiry && (
+                            <span className="text-gray-500 ml-1">· exp. {formatDate(m.medicalCertExpiry, 'dd/MM/yy')}</span>
+                          )}
+                        </a>
+                      : <span className="flex items-center gap-1 text-red-500 text-xs font-inter"><FileX size={14} /> Manquant</span>
+                    }
                   </td>
                   <td className="text-gray-500 text-xs">{formatDate(m.createdAt, 'dd MMM yyyy')}</td>
                   <td>
