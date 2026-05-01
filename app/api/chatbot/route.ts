@@ -2,8 +2,6 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import Groq from 'groq-sdk'
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
-
 const SYSTEM_PROMPT = `Tu es Coach MAJOR, l'assistant running officiel du Club MAJOR de El Jadida (Mazagan), Maroc.
 
 Tu es un coach sportif expert en course à pied, chaleureux et motivant. Tu réponds toujours en français.
@@ -36,7 +34,6 @@ export async function POST(req: Request) {
     console.log('[CHATBOT] GROQ_API_KEY présente :', !!apiKey)
 
     if (apiKey) {
-      // ── Réponse via Groq IA ───────────────────────────────────────────
       const groqClient = new Groq({ apiKey })
       const completion = await groqClient.chat.completions.create({
         model:    'llama-3.3-70b-versatile',

@@ -1,8 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Calendar, Plus, Send, Trash2, ChevronDown, ChevronUp, MessageCircle, CheckCircle, Pencil, X, Check } from 'lucide-react'
+import { Calendar, Plus, Trash2, ChevronDown, ChevronUp, MessageCircle, CheckCircle, Pencil, X, Check } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
 
@@ -39,7 +38,6 @@ interface Program {
 const EMPTY_SESSION = { dateFrom: '', dateTo: '', title: '', description: '', type: 'ENDURANCE_FONDAMENTALE' }
 
 export function AdminProgramsClient({ programs: initial }: { programs: Program[] }) {
-  const router  = useRouter()
   const [programs, setPrograms] = useState<Program[]>(initial)
   const [showNew, setShowNew]   = useState(false)
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -71,10 +69,13 @@ export function AdminProgramsClient({ programs: initial }: { programs: Program[]
     if (!form.title || !form.month || !form.year) return toast.error('Titre et date obligatoires')
     setSaving(true)
     try {
+      const validSessions = sessions.filter(s => s.dateFrom && s.title)
+      const skipped = sessions.length - validSessions.length
+      if (skipped > 0) toast(`${skipped} séance(s) ignorée(s) : date de début et titre obligatoires`, { icon: '⚠️' })
       const res = await fetch('/api/training-programs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, sessions: sessions.filter(s => s.dateFrom && s.title) }),
+        body: JSON.stringify({ ...form, sessions: validSessions }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
@@ -92,9 +93,14 @@ export function AdminProgramsClient({ programs: initial }: { programs: Program[]
 
   async function deleteProgram(id: string) {
     if (!confirm('Supprimer ce programme ?')) return
-    await fetch(`/api/training-programs/${id}`, { method: 'DELETE' })
-    setPrograms(p => p.filter(x => x.id !== id))
-    toast.success('Programme supprimé')
+    try {
+      const res = await fetch(`/api/training-programs/${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Erreur suppression')
+      setPrograms(p => p.filter(x => x.id !== id))
+      toast.success('Programme supprimé')
+    } catch (err: any) {
+      toast.error(err.message)
+    }
   }
 
   // ── Supprimer une séance
@@ -138,10 +144,7 @@ export function AdminProgramsClient({ programs: initial }: { programs: Program[]
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       setPrograms(ps => ps.map(p => p.id === programId
-        ? { ...p, sessions: p.sessions.map(s => s.id === sessionId
-            ? { ...s, ...editForm, dateFrom: new Date(editForm.dateFrom!).toISOString(), dateTo: editForm.dateTo ? new Date(editForm.dateTo).toISOString() : null }
-            : s)
-          }
+        ? { ...p, sessions: p.sessions.map(s => s.id === sessionId ? { ...s, ...data.session } : s) }
         : p
       ))
       setEditingSession(null)
@@ -385,7 +388,7 @@ export function AdminProgramsClient({ programs: initial }: { programs: Program[]
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-white text-sm font-inter truncate">{s.title}</p>
-                                <p className="text-gray-500 text-xs font-inter truncate">{s.description.split('\n')[0]}</p>
+                                <p className="text-gray-500 text-xs font-inter truncate">{s.description?.split('\n')[0]}</p>
                               </div>
                               <div className="flex items-center gap-2">
                                 {/* Bouton Modifier */}

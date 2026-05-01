@@ -46,9 +46,16 @@ export async function POST(req: Request, { params }: Ctx) {
     })
 
     // Si groupe WhatsApp configuré
-    const waLink = program.whatsappGroup
-      ? `https://wa.me/${program.whatsappGroup.replace(/\D/g, '')}?text=${encoded}`
-      : `https://wa.me/?text=${encoded}`
+    const group = program.whatsappGroup
+    let waLink: string
+    if (!group) {
+      waLink = `https://wa.me/?text=${encoded}`
+    } else if (group.includes('chat.whatsapp.com')) {
+      // Lien d'invitation groupe : WhatsApp ne supporte pas le pré-remplissage
+      waLink = group
+    } else {
+      waLink = `https://wa.me/${group.replace(/\D/g, '')}?text=${encoded}`
+    }
 
     return NextResponse.json({ ok: true, waLink, message })
   } catch (err) {

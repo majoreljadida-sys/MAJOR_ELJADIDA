@@ -23,6 +23,31 @@ export async function GET(_req: Request, { params }: Params) {
   return NextResponse.json({ member, user: member.user })
 }
 
+export async function DELETE(_req: Request, { params }: Params) {
+  const session = await auth()
+  if (!session || session.user.role?.toLowerCase() !== 'admin')
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+
+  try {
+    const member = await prisma.member.findUnique({
+      where: { id: params.id },
+      select: { userId: true },
+    })
+    if (!member) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
+
+    await prisma.attendance.deleteMany({ where: { memberId: params.id } })
+    await prisma.eventRegistration.deleteMany({ where: { memberId: params.id } })
+    await prisma.payment.deleteMany({ where: { memberId: params.id } })
+    await prisma.member.delete({ where: { id: params.id } })
+    await prisma.user.delete({ where: { id: member.userId } })
+
+    return NextResponse.json({ ok: true })
+  } catch (err) {
+    console.error('[MEMBER DELETE]', err)
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+  }
+}
+
 export async function PATCH(req: Request, { params }: Params) {
   const session = await auth()
   if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
@@ -36,7 +61,7 @@ export async function PATCH(req: Request, { params }: Params) {
   const body = await req.json()
   const {
     firstName, lastName, phone,
-    city, tshirtSize, category, emergencyContact, emergencyPhone, bio,
+    city, tshirtSize, category,
     memberStatus, // admin-only field
   } = body
 
