@@ -27,18 +27,20 @@ export default function MemberProfilePage() {
       .then(r => r.json())
       .then(data => {
         if (data.member) {
-          const { member, user } = data
+          const { member } = data
           setForm({
-            firstName: user.firstName ?? '',
-            lastName:  user.lastName  ?? '',
-            phone:     user.phone     ?? '',
-            city:      member.city    ?? '',
-            tshirtSize: member.tshirtSize ?? 'M',
-            category:  member.category  ?? 'SENIOR',
+            firstName: member.firstName       ?? '',
+            lastName:  member.lastName        ?? '',
+            phone:     member.phone           ?? '',
+            city:      member.placeOfBirth    ?? '',
+            tshirtSize: member.tshirtSize     ?? 'M',
+            category:  member.category        ?? 'SENIOR',
             emergencyContact: member.emergencyContact ?? '',
             emergencyPhone:   member.emergencyPhone   ?? '',
             bio: member.bio ?? '',
           })
+          if (member.medicalCertUrl) setCertUrl(member.medicalCertUrl)
+          if (member.medicalCertExpiry) setCertExpiry(new Date(member.medicalCertExpiry).toISOString().split('T')[0])
         }
       })
   }, [session])
