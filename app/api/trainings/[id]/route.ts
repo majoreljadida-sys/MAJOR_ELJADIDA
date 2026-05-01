@@ -15,10 +15,16 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   await prisma.$executeRaw`
     UPDATE training_sessions
     SET present_count = ${count},
-        status = CASE WHEN ${count} IS NOT NULL THEN 'COMPLETED'::"SessionStatus" ELSE status END,
         updated_at = NOW()
     WHERE id = ${params.id}
   `
+
+  if (count !== null) {
+    await prisma.trainingSession.update({
+      where: { id: params.id },
+      data:  { status: 'COMPLETED' },
+    })
+  }
 
   return NextResponse.json({ ok: true, presentCount: count })
 }
