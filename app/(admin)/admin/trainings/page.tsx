@@ -9,15 +9,19 @@ export default async function AdminTrainingsPage() {
   const session = await auth()
   if (!session || session.user.role !== 'ADMIN') redirect('/login')
 
-  const [sessions, groups, coaches] = await Promise.all([
-    prisma.trainingSession.findMany({
-      orderBy: { date: 'desc' },
-      take: 100,
-      include: {
-        group: true,
-        coach: { include: { user: true } },
-      },
-    }),
+  const [rawSessions, groups, coaches] = await Promise.all([
+    prisma.$queryRaw<any[]>`
+      SELECT
+        ts.id, ts.title, ts.date, ts.location, ts.type, ts.status,
+        ts.duration, ts.present_count AS "presentCount",
+        tg.id AS "groupId", tg.name AS "groupName",
+        c.first_name AS "coachFirst", c.last_name AS "coachLast"
+      FROM training_sessions ts
+      LEFT JOIN training_groups tg ON ts.group_id = tg.id
+      LEFT JOIN coaches c ON ts.coach_id = c.id
+      ORDER BY ts.date DESC
+      LIMIT 100
+    `,
     prisma.trainingGroup.findMany({
       include: {
         coach:  { include: { user: true } },
@@ -27,25 +31,25 @@ export default async function AdminTrainingsPage() {
     prisma.coach.findMany({ include: { user: true } }),
   ])
 
-  const serialized = sessions.map(s => ({
+  const sessions = rawSessions.map((s: any) => ({
     id:           s.id,
     title:        s.title,
-    date:         s.date.toISOString(),
+    date:         new Date(s.date).toISOString(),
     location:     s.location,
     type:         s.type,
     status:       s.status,
     duration:     s.duration,
-    presentCount: null as number | null,
-    group:        s.group ? { id: s.group.id, name: s.group.name } : null,
-    coach:        s.coach ? { firstName: s.coach.firstName, lastName: s.coach.lastName } : null,
+    presentCount: s.presentCount !== null ? Number(s.presentCount) : null,
+    group:        s.groupId ? { id: s.groupId, name: s.groupName } : null,
+    coach:        s.coachFirst ? { firstName: s.coachFirst, lastName: s.coachLast } : null,
   }))
 
   const serializedGroups = groups.map(g => ({
-    id:    g.id,
-    name:  g.name,
-    level: g.level,
+    id:     g.id,
+    name:   g.name,
+    level:  g.level,
     _count: g._count,
-    coach: g.coach ? { firstName: g.coach.firstName, lastName: g.coach.lastName } : null,
+    coach:  g.coach ? { firstName: g.coach.firstName, lastName: g.coach.lastName } : null,
   }))
 
   const serializedCoaches = coaches.map(c => ({
@@ -54,5 +58,5 @@ export default async function AdminTrainingsPage() {
     lastName:  c.lastName,
   }))
 
-  return <TrainingsClient sessions={serialized} groups={serializedGroups} coaches={serializedCoaches} />
+  return <TrainingsClient sessions={sessions} groups={serializedGroups} coaches={serializedCoaches} />
 }
