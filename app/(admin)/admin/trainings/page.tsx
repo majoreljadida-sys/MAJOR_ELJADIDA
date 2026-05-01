@@ -7,9 +7,8 @@ export default async function AdminTrainingsPage() {
       orderBy: { date: 'desc' },
       take: 100,
       include: {
-        group:       true,
-        coach:       { include: { user: true } },
-        attendances: true,
+        group: true,
+        coach: { include: { user: true } },
       },
     }),
     prisma.trainingGroup.findMany({
@@ -22,9 +21,31 @@ export default async function AdminTrainingsPage() {
   ])
 
   const serialized = sessions.map(s => ({
-    ...s,
-    date: s.date.toISOString(),
+    id:           s.id,
+    title:        s.title,
+    date:         s.date.toISOString(),
+    location:     s.location,
+    type:         s.type,
+    status:       s.status,
+    duration:     s.duration,
+    presentCount: (s as any).presentCount ?? null,
+    group:        s.group ? { id: s.group.id, name: s.group.name } : null,
+    coach:        s.coach ? { firstName: s.coach.firstName, lastName: s.coach.lastName } : null,
   }))
 
-  return <TrainingsClient sessions={serialized} groups={groups} coaches={coaches} />
+  const serializedGroups = groups.map(g => ({
+    id:    g.id,
+    name:  g.name,
+    level: g.level,
+    _count: g._count,
+    coach: g.coach ? { firstName: g.coach.firstName, lastName: g.coach.lastName } : null,
+  }))
+
+  const serializedCoaches = coaches.map(c => ({
+    id:        c.id,
+    firstName: c.firstName,
+    lastName:  c.lastName,
+  }))
+
+  return <TrainingsClient sessions={serialized} groups={serializedGroups} coaches={serializedCoaches} />
 }
