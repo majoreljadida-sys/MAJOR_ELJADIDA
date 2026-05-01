@@ -7,16 +7,18 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (!session || !['ADMIN', 'COACH'].includes(session.user.role ?? ''))
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
-  const { presentCount, status } = await req.json()
+  const { presentCount } = await req.json()
+  const count = presentCount === '' || presentCount === null || presentCount === undefined
+    ? null
+    : parseInt(presentCount)
 
-  const updated = await prisma.trainingSession.update({
-    where: { id: params.id },
-    data: {
-      ...(presentCount !== undefined ? { presentCount: presentCount === '' ? null : parseInt(presentCount) } : {}),
-      ...(status ? { status } : {}),
-      ...(presentCount !== undefined && presentCount !== '' ? { status: 'COMPLETED' } : {}),
-    },
-  })
+  await prisma.$executeRaw`
+    UPDATE training_sessions
+    SET present_count = ${count},
+        status = CASE WHEN ${count} IS NOT NULL THEN 'COMPLETED'::"SessionStatus" ELSE status END,
+        updated_at = NOW()
+    WHERE id = ${params.id}
+  `
 
-  return NextResponse.json({ training: updated })
+  return NextResponse.json({ ok: true, presentCount: count })
 }

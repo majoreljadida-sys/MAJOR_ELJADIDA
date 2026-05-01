@@ -201,7 +201,6 @@ model TrainingSession {
   groupId         String?
   group           TrainingGroup?  @relation(fields: [groupId], references: [id])
   maxParticipants Int?
-  presentCount    Int?
   status          SessionStatus   @default(SCHEDULED)
   attendances     Attendance[]
   createdAt       DateTime        @default(now())
