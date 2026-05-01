@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Eye, EyeOff, UserPlus, AlertCircle, CheckCircle, ScrollText, ChevronDown, ShieldCheck } from 'lucide-react'
 import { TSHIRT_SIZE_LABELS, MEMBER_CATEGORY_LABELS } from '@/lib/utils'
@@ -44,6 +43,9 @@ const CHARTER_FR = [
       "J'ai pris connaissance de cette charte et en ai compris le contenu.",
       "Je m'engage à respecter toutes les règles et réglementations qu'elle contient.",
       "J'assume ma responsabilité dans le respect des règles et le maintien de l'esprit d'équipe.",
+      "Je m'engage à respecter la décence publique, à me conformer aux règlements internes applicables et à m'abstenir de tout comportement ou acte susceptible d'offenser la pudeur publique ou de violer les bonnes mœurs.",
+      "J'assume l'entière responsabilité de toute infraction à ces règles, qui pourra entraîner des sanctions disciplinaires, pouvant aller jusqu'à l'exclusion du groupe.",
+      "J'autorise le Club MAJOR à utiliser mes données personnelles (nom, prénom, photo) pour les besoins de participation et de communication liés aux événements sportifs organisés par le club.",
     ],
   },
 ]
@@ -82,12 +84,14 @@ const CHARTER_AR = [
       'أنه اطلع على هذا الميثاق وفهم مضمونه.',
       'أنه يلتزم باحترام جميع القوانين والتنظيمات الواردة فيه.',
       'أنه يتحمل مسؤوليته في الالتزام بقواعد المجموعة والمحافظة على روح الفريق.',
+      'يلتزم باحترام الآداب العامة والامتثال للوائح الداخلية المعمول بها، والامتناع عن أي سلوك أو تصرف من شأنه الإخلال بالحياء العام أو انتهاك قواعد الأخلاق الحميدة.',
+      'يتحمل المسؤولية الكاملة عن أي مخالفة لهذه القواعد، مما قد يترتب عليه توقيع عقوبات تأديبية تصل إلى الطرد من المجموعة.',
+      'يُجيز لنادي MAJOR استخدام بياناته الشخصية (الاسم، الصورة) لأغراض المشاركة والتواصل المرتبطة بالفعاليات الرياضية التي ينظمها النادي.',
     ],
   },
 ]
 
 export default function RegisterPage() {
-  const router    = useRouter()
   const [step, setStep]       = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState('')
