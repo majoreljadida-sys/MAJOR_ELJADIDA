@@ -12,18 +12,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     ? null
     : parseInt(presentCount)
 
-  await prisma.$executeRaw`
-    UPDATE training_sessions
-    SET present_count = ${count},
-        updated_at = NOW()
-    WHERE id = ${params.id}
-  `
+  await prisma.$executeRaw`UPDATE training_sessions SET present_count = ${count} WHERE id = ${params.id}`
 
   if (count !== null) {
-    await prisma.trainingSession.update({
-      where: { id: params.id },
-      data:  { status: 'COMPLETED' },
-    })
+    await prisma.trainingSession.update({ where: { id: params.id }, data: { status: 'COMPLETED' } })
   }
 
   return NextResponse.json({ ok: true, presentCount: count })
