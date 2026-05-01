@@ -65,7 +65,7 @@ export default async function MemberDashboardPage() {
         <div className="flex items-center gap-3 bg-red-900/20 border border-red-700/40 rounded-xl px-5 py-4 mb-4 text-red-400 font-inter text-sm">
           <ShieldAlert size={18} className="flex-shrink-0" />
           <span>Vous n'avez pas encore fourni votre <strong>certificat médical</strong>. Il est requis pour les compétitions.</span>
-          <Link href="/member/profile" className="ml-auto underline text-xs whitespace-nowrap">Ajouter</Link>
+          <Link href="/member/profile#certificat" className="ml-auto underline text-xs whitespace-nowrap">Ajouter</Link>
         </div>
       )}
 

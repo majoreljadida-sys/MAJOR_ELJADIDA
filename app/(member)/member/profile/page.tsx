@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import { useState, useEffect } from 'react'
-import { Save, User, Phone, MapPin, Shield } from 'lucide-react'
+import { Save, User, MapPin, Shield, FileText, Upload } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { TSHIRT_SIZE_LABELS, MEMBER_CATEGORY_LABELS } from '@/lib/utils'
 
@@ -12,6 +12,10 @@ const CATS  = Object.entries(MEMBER_CATEGORY_LABELS)
 export default function MemberProfilePage() {
   const { data: session } = useSession()
   const [loading, setLoading] = useState(false)
+  const [certFile, setCertFile]     = useState<File | null>(null)
+  const [certExpiry, setCertExpiry] = useState('')
+  const [certLoading, setCertLoading] = useState(false)
+  const [certUrl, setCertUrl]       = useState<string | null>(null)
   const [form, setForm] = useState({
     firstName: '', lastName: '', phone: '', city: '', tshirtSize: 'M',
     category: 'SENIOR', emergencyContact: '', emergencyPhone: '', bio: '',
@@ -40,6 +44,26 @@ export default function MemberProfilePage() {
   }, [session])
 
   function set(k: string, v: string) { setForm(f => ({ ...f, [k]: v })) }
+
+  async function uploadCert() {
+    if (!certFile || !certExpiry) return toast.error('Fichier et date d\'expiration requis')
+    setCertLoading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', certFile)
+      fd.append('expiry', certExpiry)
+      fd.append('memberId', session?.user?.profileId ?? '')
+      const res = await fetch('/api/upload/certificate', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setCertUrl(data.url)
+      toast.success('Certificat médical ajouté !')
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setCertLoading(false)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -140,6 +164,35 @@ export default function MemberProfilePage() {
               <input type="tel" className="input-dark" placeholder="+212 6XX XXX XXX"
                 value={form.emergencyPhone} onChange={e => set('emergencyPhone', e.target.value)} />
             </div>
+          </div>
+        </div>
+
+        {/* Certificat médical */}
+        <div id="certificat" className="card-dark scroll-mt-8">
+          <div className="flex items-center gap-2 mb-5">
+            <FileText size={18} className="text-major-accent" />
+            <h2 className="font-oswald text-white text-lg uppercase tracking-wide">Certificat médical</h2>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <label className="form-label">Fichier (PDF, JPG, PNG — max 5 MB)</label>
+              <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp"
+                onChange={e => setCertFile(e.target.files?.[0] ?? null)}
+                className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-major-primary/20 file:text-major-accent hover:file:bg-major-primary/30 cursor-pointer" />
+            </div>
+            <div>
+              <label className="form-label">Date d'expiration</label>
+              <input type="date" className="input-dark" value={certExpiry}
+                onChange={e => setCertExpiry(e.target.value)} />
+            </div>
+            {certUrl && (
+              <p className="text-green-400 text-xs font-inter">✓ Certificat enregistré</p>
+            )}
+            <button type="button" onClick={uploadCert} disabled={certLoading || !certFile || !certExpiry}
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-major-primary/20 text-major-accent border border-major-primary/30 hover:bg-major-primary/30 transition-all text-sm font-semibold font-inter disabled:opacity-40 disabled:cursor-not-allowed">
+              <Upload size={15} />
+              {certLoading ? 'Envoi...' : 'Envoyer le certificat'}
+            </button>
           </div>
         </div>
 
