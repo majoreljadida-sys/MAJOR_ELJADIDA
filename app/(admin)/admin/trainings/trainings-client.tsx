@@ -2,35 +2,91 @@
 
 import { useState } from 'react'
 import { formatDate, TRAINING_TYPE_LABELS, SESSION_STATUS_LABELS } from '@/lib/utils'
-import { Calendar, Users, Clock, Plus, X, CheckSquare, Square, Save, Loader2 } from 'lucide-react'
+import { Users, Plus, X, Loader2, Check } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const STATUS_COLOR: Record<string, string> = {
   SCHEDULED:   'text-major-accent',
-  COMPLETED:   'text-gray-500',
+  COMPLETED:   'text-green-400',
   CANCELLED:   'text-red-400',
   IN_PROGRESS: 'text-major-cyan',
 }
 
 const TYPES = [
-  { value: 'ENDURANCE_FONDAMENTALE', label: 'Endurance Fondamentale' },
-  { value: 'FRACTIONNE',             label: 'Fractionné' },
-  { value: 'SORTIE_LONGUE',          label: 'Sortie Longue' },
-  { value: 'PREPARATION_COMPETITION',label: 'Préparation Compétition' },
-  { value: 'RECUPERATION',           label: 'Récupération' },
-  { value: 'RENFORCEMENT',           label: 'Renforcement' },
+  { value: 'ENDURANCE_FONDAMENTALE',  label: 'Endurance Fondamentale' },
+  { value: 'FRACTIONNE',              label: 'Fractionné' },
+  { value: 'SORTIE_LONGUE',           label: 'Sortie Longue' },
+  { value: 'PREPARATION_COMPETITION', label: 'Préparation Compétition' },
+  { value: 'RECUPERATION',            label: 'Récupération' },
+  { value: 'RENFORCEMENT',            label: 'Renforcement' },
 ]
 
 type Session = {
   id: string; title: string; date: string; location: string; type: string
-  status: string; duration: number | null
+  status: string; duration: number | null; presentCount: number | null
   group: { id: string; name: string } | null
   coach: { firstName: string; lastName: string } | null
-  attendances: { present: boolean }[]
 }
-type Group   = { id: string; name: string; _count: { members: number; sessions: number }; coach: { firstName: string; lastName: string } | null; level: string | null }
-type Coach   = { id: string; firstName: string; lastName: string }
-type Attendance = { id: string; present: boolean; member: { id: string; firstName: string; lastName: string } }
+type Group = { id: string; name: string; _count: { members: number; sessions: number }; coach: { firstName: string; lastName: string } | null; level: string | null }
+type Coach = { id: string; firstName: string; lastName: string }
+
+function AttendanceCell({ session, onSave }: { session: Session; onSave: (id: string, count: number | null) => void }) {
+  const [editing, setEditing] = useState(false)
+  const [value,   setValue]   = useState(session.presentCount?.toString() ?? '')
+  const [saving,  setSaving]  = useState(false)
+
+  async function save() {
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/trainings/${session.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ presentCount: value }),
+      })
+      if (!res.ok) throw new Error()
+      const count = value === '' ? null : parseInt(value)
+      onSave(session.id, count)
+      setEditing(false)
+      toast.success('Présence enregistrée !')
+    } catch {
+      toast.error('Erreur.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1">
+        <input
+          type="number" min="0" max="500" autoFocus
+          value={value}
+          onChange={e => setValue(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEditing(false) }}
+          className="w-16 bg-major-black border border-major-primary rounded-lg px-2 py-1 text-white text-sm font-oswald text-center focus:outline-none"
+        />
+        <button onClick={save} disabled={saving} className="text-green-400 hover:text-green-300">
+          {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+        </button>
+        <button onClick={() => setEditing(false)} className="text-gray-500 hover:text-gray-300">
+          <X size={14} />
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <button onClick={() => setEditing(true)}
+      className="flex items-center gap-1.5 group">
+      <span className={`font-oswald font-bold text-base ${session.presentCount !== null ? 'text-major-accent' : 'text-gray-600'}`}>
+        {session.presentCount !== null ? session.presentCount : '—'}
+      </span>
+      <span className="text-gray-600 text-xs font-inter group-hover:text-gray-400 transition-colors">
+        {session.presentCount !== null ? 'présents · modifier' : 'cliquer pour saisir'}
+      </span>
+    </button>
+  )
+}
 
 export function TrainingsClient({ sessions: init, groups, coaches }: {
   sessions: Session[]; groups: Group[]; coaches: Coach[]
@@ -40,16 +96,17 @@ export function TrainingsClient({ sessions: init, groups, coaches }: {
   const [saving,   setSaving]   = useState(false)
   const [form, setForm] = useState({
     title: '', date: '', location: '', type: 'ENDURANCE_FONDAMENTALE',
-    groupId: '', coachId: '', duration: '', description: '',
+    groupId: '', coachId: '', duration: '',
   })
 
-  // Modal présences
-  const [attendModal, setAttendModal] = useState<string | null>(null)
-  const [attendances, setAttendances] = useState<Attendance[]>([])
-  const [attendLoading, setAttendLoading] = useState(false)
-  const [attendSaving,  setAttendSaving]  = useState(false)
-
   function set(k: string, v: string) { setForm(f => ({ ...f, [k]: v })) }
+
+  function handleAttendanceSave(id: string, count: number | null) {
+    setSessions(s => s.map(x => x.id === id
+      ? { ...x, presentCount: count, status: count !== null ? 'COMPLETED' : x.status }
+      : x
+    ))
+  }
 
   async function createSession() {
     if (!form.title || !form.date || !form.type) return toast.error('Titre, date et type requis.')
@@ -58,9 +115,16 @@ export function TrainingsClient({ sessions: init, groups, coaches }: {
       const res  = await fetch('/api/trainings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
-      setSessions(s => [{ ...data.training, group: groups.find(g => g.id === form.groupId) ?? null, coach: coaches.find(c => c.id === form.coachId) ?? null, attendances: [] }, ...s])
+      const newSession: Session = {
+        ...data.training,
+        date:         new Date(data.training.date).toISOString(),
+        presentCount: null,
+        group:        groups.find(g => g.id === form.groupId) ?? null,
+        coach:        coaches.find(c => c.id === form.coachId) ?? null,
+      }
+      setSessions(s => [newSession, ...s])
       setShowNew(false)
-      setForm({ title: '', date: '', location: '', type: 'ENDURANCE_FONDAMENTALE', groupId: '', coachId: '', duration: '', description: '' })
+      setForm({ title: '', date: '', location: '', type: 'ENDURANCE_FONDAMENTALE', groupId: '', coachId: '', duration: '' })
       toast.success('Séance créée !')
     } catch (err: any) {
       toast.error(err.message)
@@ -69,49 +133,10 @@ export function TrainingsClient({ sessions: init, groups, coaches }: {
     }
   }
 
-  async function openAttendance(sessionId: string) {
-    setAttendModal(sessionId)
-    setAttendLoading(true)
-    try {
-      const res  = await fetch(`/api/trainings/${sessionId}/attendance`)
-      const data = await res.json()
-      setAttendances(data.attendances ?? [])
-    } catch {
-      toast.error('Erreur de chargement.')
-    } finally {
-      setAttendLoading(false)
-    }
-  }
-
-  function togglePresent(memberId: string) {
-    setAttendances(a => a.map(x => x.member.id === memberId ? { ...x, present: !x.present } : x))
-  }
-
-  async function saveAttendance() {
-    if (!attendModal) return
-    setAttendSaving(true)
-    try {
-      const updates = attendances.map(a => ({ memberId: a.member.id, present: a.present }))
-      const res  = await fetch(`/api/trainings/${attendModal}/attendance`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ updates }),
-      })
-      if (!res.ok) throw new Error()
-      const presentCount = updates.filter(u => u.present).length
-      setSessions(s => s.map(x => x.id === attendModal
-        ? { ...x, attendances: updates.map(u => ({ present: u.present })), status: presentCount > 0 ? 'COMPLETED' : x.status }
-        : x
-      ))
-      toast.success('Présences enregistrées !')
-      setAttendModal(null)
-    } catch {
-      toast.error('Erreur lors de la sauvegarde.')
-    } finally {
-      setAttendSaving(false)
-    }
-  }
-
-  const presentCount = attendances.filter(a => a.present).length
+  const totalPresences = sessions.reduce((sum, s) => sum + (s.presentCount ?? 0), 0)
+  const avgPresence    = sessions.filter(s => s.presentCount !== null).length > 0
+    ? Math.round(totalPresences / sessions.filter(s => s.presentCount !== null).length)
+    : null
 
   return (
     <div className="p-8">
@@ -125,6 +150,24 @@ export function TrainingsClient({ sessions: init, groups, coaches }: {
           <Plus size={16} /> Nouvelle séance
         </button>
       </div>
+
+      {/* Stats rapides */}
+      {avgPresence !== null && (
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          <div className="card-dark">
+            <p className="text-gray-500 text-xs font-inter uppercase tracking-widest mb-1">Séances enregistrées</p>
+            <p className="font-oswald text-2xl font-bold text-white">{sessions.filter(s => s.presentCount !== null).length}</p>
+          </div>
+          <div className="card-dark">
+            <p className="text-gray-500 text-xs font-inter uppercase tracking-widest mb-1">Moyenne présences</p>
+            <p className="font-oswald text-2xl font-bold text-major-accent">{avgPresence}</p>
+          </div>
+          <div className="card-dark">
+            <p className="text-gray-500 text-xs font-inter uppercase tracking-widest mb-1">Total présences</p>
+            <p className="font-oswald text-2xl font-bold text-major-cyan">{totalPresences}</p>
+          </div>
+        </div>
+      )}
 
       {/* Groupes */}
       <section className="mb-10">
@@ -143,7 +186,6 @@ export function TrainingsClient({ sessions: init, groups, coaches }: {
                 <Users size={13} className="text-major-primary" />
                 Coach : {g.coach ? `${g.coach.firstName} ${g.coach.lastName}` : 'Non assigné'}
               </div>
-              <p className="text-gray-600 text-xs font-inter mt-2">{g._count.sessions} séances totales</p>
             </div>
           ))}
         </div>
@@ -151,7 +193,7 @@ export function TrainingsClient({ sessions: init, groups, coaches }: {
 
       {/* Tableau séances */}
       <section>
-        <h2 className="font-oswald text-white text-xl uppercase tracking-wide mb-4">Dernières séances</h2>
+        <h2 className="font-oswald text-white text-xl uppercase tracking-wide mb-4">Séances</h2>
         <div className="card-dark overflow-hidden p-0">
           <div className="overflow-x-auto">
             <table className="table-dark">
@@ -165,55 +207,34 @@ export function TrainingsClient({ sessions: init, groups, coaches }: {
                   <th>Durée</th>
                   <th>Présences</th>
                   <th>Statut</th>
-                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {sessions.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="text-center py-12 text-gray-600 font-inter">
+                    <td colSpan={8} className="text-center py-12 text-gray-600 font-inter">
                       Aucune séance. Créez la première !
                     </td>
                   </tr>
                 )}
-                {sessions.map(s => {
-                  const present = s.attendances.filter(a => a.present).length
-                  const total   = s.attendances.length
-                  const pct     = total > 0 ? Math.round((present / total) * 100) : null
-                  return (
-                    <tr key={s.id}>
-                      <td className="text-gray-400 text-xs whitespace-nowrap">{formatDate(s.date, 'dd MMM yyyy')}</td>
-                      <td className="text-white font-medium text-sm">{s.title}</td>
-                      <td><span className="badge text-xs">{TRAINING_TYPE_LABELS[s.type] ?? s.type}</span></td>
-                      <td className="text-gray-400 text-sm">{s.group?.name ?? '—'}</td>
-                      <td className="text-gray-400 text-sm whitespace-nowrap">
-                        {s.coach ? `${s.coach.firstName} ${s.coach.lastName}` : '—'}
-                      </td>
-                      <td className="text-gray-400 text-sm">{s.duration ?? '—'} min</td>
-                      <td>
-                        <div className="flex items-center gap-2">
-                          <span className="text-major-accent font-oswald font-bold">{present}/{total}</span>
-                          {pct !== null && (
-                            <span className={`text-xs font-inter ${pct >= 75 ? 'text-green-400' : pct >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
-                              {pct}%
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td>
-                        <span className={`text-xs font-inter font-medium ${STATUS_COLOR[s.status] ?? 'text-gray-400'}`}>
-                          {SESSION_STATUS_LABELS[s.status] ?? s.status}
-                        </span>
-                      </td>
-                      <td>
-                        <button onClick={() => openAttendance(s.id)}
-                          className="flex items-center gap-1 text-xs font-inter text-major-accent hover:text-major-primary border border-major-primary/30 rounded-lg px-3 py-1.5 transition-colors">
-                          <CheckSquare size={13} /> Présences
-                        </button>
-                      </td>
-                    </tr>
-                  )
-                })}
+                {sessions.map(s => (
+                  <tr key={s.id}>
+                    <td className="text-gray-400 text-xs whitespace-nowrap">{formatDate(s.date, 'dd MMM yyyy')}</td>
+                    <td className="text-white font-medium text-sm">{s.title}</td>
+                    <td><span className="badge text-xs">{TRAINING_TYPE_LABELS[s.type] ?? s.type}</span></td>
+                    <td className="text-gray-400 text-sm">{s.group?.name ?? '—'}</td>
+                    <td className="text-gray-400 text-sm whitespace-nowrap">
+                      {s.coach ? `${s.coach.firstName} ${s.coach.lastName}` : '—'}
+                    </td>
+                    <td className="text-gray-400 text-sm">{s.duration ?? '—'} min</td>
+                    <td><AttendanceCell session={s} onSave={handleAttendanceSave} /></td>
+                    <td>
+                      <span className={`text-xs font-inter font-medium ${STATUS_COLOR[s.status] ?? 'text-gray-400'}`}>
+                        {SESSION_STATUS_LABELS[s.status] ?? s.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -276,74 +297,6 @@ export function TrainingsClient({ sessions: init, groups, coaches }: {
                 Créer
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal présences */}
-      {attendModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-major-dark border border-gray-800 rounded-2xl w-full max-w-md flex flex-col max-h-[80vh]">
-            <div className="flex items-center justify-between p-5 border-b border-gray-800">
-              <div>
-                <h3 className="font-oswald text-white text-xl uppercase tracking-wide">Présences</h3>
-                <p className="text-gray-500 text-xs font-inter mt-0.5">
-                  {sessions.find(s => s.id === attendModal)?.title}
-                </p>
-              </div>
-              <button onClick={() => setAttendModal(null)} className="text-gray-500 hover:text-white"><X size={20} /></button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4 space-y-2">
-              {attendLoading && (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 size={24} className="animate-spin text-major-accent" />
-                </div>
-              )}
-              {!attendLoading && attendances.length === 0 && (
-                <p className="text-gray-600 text-sm font-inter text-center py-8">
-                  Aucun membre dans ce groupe.
-                </p>
-              )}
-              {!attendLoading && attendances.map(a => (
-                <button key={a.member.id} onClick={() => togglePresent(a.member.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all ${
-                    a.present
-                      ? 'bg-green-900/20 border-green-700/40 text-green-400'
-                      : 'bg-major-black/40 border-gray-800 text-gray-400 hover:border-gray-600'
-                  }`}>
-                  {a.present
-                    ? <CheckSquare size={18} className="flex-shrink-0" />
-                    : <Square     size={18} className="flex-shrink-0" />
-                  }
-                  <span className="font-inter text-sm font-medium">
-                    {a.member.firstName} {a.member.lastName}
-                  </span>
-                  {a.present && <span className="ml-auto text-xs font-inter text-green-500">Présent</span>}
-                </button>
-              ))}
-            </div>
-
-            {!attendLoading && attendances.length > 0 && (
-              <div className="p-4 border-t border-gray-800">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-gray-400 text-sm font-inter">
-                    <span className="text-white font-bold">{presentCount}</span> / {attendances.length} présents
-                  </span>
-                  <span className={`text-sm font-oswald font-bold ${
-                    presentCount / attendances.length >= 0.75 ? 'text-green-400' :
-                    presentCount / attendances.length >= 0.5  ? 'text-yellow-400' : 'text-red-400'
-                  }`}>
-                    {Math.round((presentCount / attendances.length) * 100)}%
-                  </span>
-                </div>
-                <button onClick={saveAttendance} disabled={attendSaving}
-                  className="btn-primary w-full flex items-center justify-center gap-2 py-2.5 text-sm disabled:opacity-50">
-                  {attendSaving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
-                  Enregistrer les présences
-                </button>
-              </div>
-            )}
           </div>
         </div>
       )}
