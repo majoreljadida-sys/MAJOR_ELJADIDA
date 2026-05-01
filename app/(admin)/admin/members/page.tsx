@@ -98,11 +98,6 @@ export default async function AdminMembersPage({ searchParams }: Props) {
                   <td className="text-gray-400 text-sm">{m.category ? MEMBER_CATEGORY_LABELS[m.category] : '—'}</td>
                   <td className="text-gray-400 text-sm">{m.group?.name ?? '—'}</td>
                   <td>
-                    <span className={`text-xs font-inter font-medium ${getMemberStatusColor(m.status)}`}>
-                      {MEMBER_STATUS_LABELS[m.status]}
-                    </span>
-                  </td>
-                  <td>
                     {m.medicalCertUrl
                       ? <a href={m.medicalCertUrl} target="_blank" rel="noopener noreferrer"
                           className="flex items-center gap-1 text-green-400 hover:text-green-300 text-xs font-inter transition-colors">
@@ -113,6 +108,11 @@ export default async function AdminMembersPage({ searchParams }: Props) {
                         </a>
                       : <span className="flex items-center gap-1 text-red-500 text-xs font-inter"><FileX size={14} /> Manquant</span>
                     }
+                  </td>
+                  <td>
+                    <span className={`text-xs font-inter font-medium ${getMemberStatusColor(m.status)}`}>
+                      {MEMBER_STATUS_LABELS[m.status]}
+                    </span>
                   </td>
                   <td className="text-gray-500 text-xs">{formatDate(m.createdAt, 'dd MMM yyyy')}</td>
                   <td>
