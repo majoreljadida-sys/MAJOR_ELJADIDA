@@ -3,9 +3,17 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Save, Trash2, Youtube } from 'lucide-react'
+import { ArrowLeft, Save, Trash2, Youtube, Users, Phone, Clock, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { extractYoutubeId } from '@/lib/youtube'
+import { formatDate } from '@/lib/utils'
+
+type Registration = {
+  id: string
+  status: string
+  createdAt: string
+  member: { id: string; firstName: string; lastName: string; phone: string | null; photo: string | null }
+}
 
 const EVENT_TYPES = [
   { value: 'RACE',       label: 'Course officielle'        },
@@ -27,6 +35,9 @@ export default function EditEventPage() {
   const { id }  = useParams<{ id: string }>()
   const [loading,  setLoading]  = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [registrations, setRegistrations] = useState<Registration[]>([])
+  const [eventTitle,    setEventTitle]    = useState('')
+  const [removingId,    setRemovingId]    = useState<string | null>(null)
   const [form, setForm] = useState({
     title: '', type: 'RACE', date: '', location: '', description: '',
     maxParticipants: '', price: '', distance: '', status: 'UPCOMING', videoUrl: '',
@@ -52,8 +63,26 @@ export default function EditEventPage() {
           status:          event.status         ?? 'UPCOMING',
           videoUrl:        event.videoUrl        ?? '',
         })
+        setEventTitle(event.title ?? '')
+        setRegistrations(event.registrations ?? [])
       })
   }, [id])
+
+  async function removeRegistration(reg: Registration) {
+    if (!confirm(`Retirer ${reg.member.firstName} ${reg.member.lastName} de la liste ?`)) return
+    setRemovingId(reg.id)
+    try {
+      const res = await fetch(`/api/events/${id}/registrations/${reg.id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setRegistrations(rs => rs.filter(r => r.id !== reg.id))
+      toast.success('Inscription retirée.')
+    } catch (err: any) {
+      toast.error(err.message ?? 'Erreur.')
+    } finally {
+      setRemovingId(null)
+    }
+  }
 
   function set(key: string, value: string) { setForm(f => ({ ...f, [key]: value })) }
 
@@ -202,6 +231,86 @@ export default function EditEventPage() {
           </button>
         </div>
       </form>
+
+      {/* ── Liste des inscrits ── */}
+      <div className="card-dark mt-8">
+        <div className="flex items-center gap-2 mb-4">
+          <Users size={18} className="text-major-primary" />
+          <h2 className="font-oswald text-white text-xl uppercase tracking-wide">Inscrits</h2>
+          <span className="badge text-xs">{registrations.length}</span>
+          {registrations.filter(r => r.status === 'CONFIRMED').length > 0 && (
+            <span className="text-xs text-major-accent font-inter ml-2">
+              {registrations.filter(r => r.status === 'CONFIRMED').length} confirmés
+            </span>
+          )}
+          {registrations.filter(r => r.status === 'WAITING').length > 0 && (
+            <span className="text-xs text-yellow-400 font-inter">
+              · {registrations.filter(r => r.status === 'WAITING').length} en attente
+            </span>
+          )}
+        </div>
+
+        {registrations.length === 0 ? (
+          <p className="text-gray-500 font-inter text-sm py-6 text-center">
+            Aucune inscription pour le moment.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="table-dark">
+              <thead>
+                <tr>
+                  <th>Membre</th>
+                  <th>Téléphone</th>
+                  <th>Statut</th>
+                  <th>Inscrit le</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {registrations.map(r => (
+                  <tr key={r.id}>
+                    <td className="text-white font-medium text-sm">
+                      {r.member.firstName} {r.member.lastName}
+                    </td>
+                    <td className="text-gray-400 text-sm">
+                      {r.member.phone ? (
+                        <span className="flex items-center gap-1.5">
+                          <Phone size={12} className="text-major-primary" /> {r.member.phone}
+                        </span>
+                      ) : <span className="text-gray-600">—</span>}
+                    </td>
+                    <td>
+                      {r.status === 'CONFIRMED' && (
+                        <span className="text-xs text-major-accent font-inter font-medium">✓ Confirmé</span>
+                      )}
+                      {r.status === 'WAITING' && (
+                        <span className="text-xs text-yellow-400 font-inter font-medium">⏳ Liste d'attente</span>
+                      )}
+                      {r.status === 'CANCELLED' && (
+                        <span className="text-xs text-red-400 font-inter font-medium">✗ Annulé</span>
+                      )}
+                    </td>
+                    <td className="text-gray-500 text-xs">
+                      <span className="flex items-center gap-1.5">
+                        <Clock size={12} /> {formatDate(r.createdAt, "dd MMM yyyy 'à' HH'h'mm")}
+                      </span>
+                    </td>
+                    <td>
+                      <button
+                        onClick={() => removeRegistration(r)}
+                        disabled={removingId === r.id}
+                        className="text-gray-500 hover:text-red-400 disabled:opacity-50"
+                        title="Retirer de la liste">
+                        <X size={15} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

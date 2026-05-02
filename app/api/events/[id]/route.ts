@@ -9,7 +9,15 @@ type Ctx = { params: { id: string } }
 export async function GET(_: Request, { params }: Ctx) {
   const event = await prisma.event.findUnique({
     where:   { id: params.id },
-    include: { _count: { select: { registrations: true } } },
+    include: {
+      _count:        { select: { registrations: true } },
+      registrations: {
+        orderBy: { createdAt: 'asc' },
+        include: {
+          member: { select: { id: true, firstName: true, lastName: true, phone: true, photo: true } },
+        },
+      },
+    },
   })
   if (!event) return NextResponse.json({ error: 'Non trouvé' }, { status: 404 })
   return NextResponse.json({ event })
