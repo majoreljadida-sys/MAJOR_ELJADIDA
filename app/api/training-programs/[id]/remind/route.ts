@@ -46,15 +46,18 @@ export async function POST(req: Request, { params }: Ctx) {
     })
 
     // Si groupe WhatsApp configuré
+    // On utilise api.whatsapp.com/send directement (pas wa.me) pour préserver
+    // l'encoding UTF-8 des emojis — wa.me redirige et re-encode parfois en cassant les bytes.
     const group = program.whatsappGroup
     let waLink: string
     if (!group) {
-      waLink = `https://wa.me/?text=${encoded}`
+      waLink = `https://api.whatsapp.com/send?text=${encoded}`
     } else if (group.includes('chat.whatsapp.com')) {
       // Lien d'invitation groupe : WhatsApp ne supporte pas le pré-remplissage
       waLink = group
     } else {
-      waLink = `https://wa.me/${group.replace(/\D/g, '')}?text=${encoded}`
+      const phone = group.replace(/\D/g, '')
+      waLink = `https://api.whatsapp.com/send?phone=${phone}&text=${encoded}`
     }
 
     return NextResponse.json({ ok: true, waLink, message })
