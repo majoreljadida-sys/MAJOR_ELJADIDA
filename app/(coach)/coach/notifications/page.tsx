@@ -1,16 +1,15 @@
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import { NotificationsClient } from './notifications-client'
+import { NotificationsClient } from '@/app/(admin)/admin/notifications/notifications-client'
 
 export const dynamic = 'force-dynamic'
 
-export default async function AdminNotificationsPage() {
+export default async function CoachNotificationsPage() {
   const session = await auth()
   const role = session?.user.role
   if (!session || (role !== 'ADMIN' && role !== 'COACH')) redirect('/login')
 
-  // Aujourd'hui à 00:00 (borne basse — inclut une séance plus tard dans la journée)
   const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
 
   const [upcomingSessions, events, posts, history] = await Promise.all([
@@ -18,9 +17,7 @@ export default async function AdminNotificationsPage() {
       where:   { dateFrom: { gte: todayStart } },
       orderBy: { dateFrom: 'asc' },
       take:    3,
-      include: {
-        program: { select: { title: true, month: true, year: true } },
-      },
+      include: { program: { select: { title: true, month: true, year: true } } },
     }),
     prisma.event.findMany({
       where:   { status: 'UPCOMING', date: { gte: new Date() } },
@@ -39,7 +36,6 @@ export default async function AdminNotificationsPage() {
     }),
   ])
 
-  // Set des refIds déjà envoyés pour griser les boutons
   const sentRefIds = new Set(
     history.filter(h => h.refId).map(h => `${h.type}:${h.refId}`)
   )

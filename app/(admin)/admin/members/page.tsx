@@ -20,7 +20,7 @@ export default async function AdminMembersPage({ searchParams }: Props) {
         ],
       } : {}),
     },
-    include: { user: true, group: true },
+    include: { user: { include: { coach: { select: { id: true } } } }, group: true },
     orderBy: { createdAt: 'desc' },
   })
 
@@ -121,6 +121,8 @@ export default async function AdminMembersPage({ searchParams }: Props) {
                       currentStatus={m.status}
                       memberName={`${m.firstName} ${m.lastName}`}
                       memberEmail={m.user.email}
+                      isAlreadyCoach={!!m.user.coach}
+                      currentRole={m.user.role}
                     />
                   </td>
                 </tr>

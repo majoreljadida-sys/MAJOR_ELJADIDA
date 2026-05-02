@@ -1,9 +1,9 @@
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
-import { AdminProgramsClient } from './programs-client'
+import { AdminProgramsClient } from '@/app/(admin)/admin/programs/programs-client'
 
-export default async function AdminProgramsPage() {
+export default async function CoachProgramsPage() {
   const session = await auth()
   const role = session?.user.role
   if (!session || (role !== 'ADMIN' && role !== 'COACH')) redirect('/login')
@@ -13,7 +13,6 @@ export default async function AdminProgramsPage() {
     orderBy: [{ year: 'desc' }, { month: 'desc' }],
   })
 
-  // Serialize dates to strings for client component
   const programs = raw.map(p => ({
     ...p,
     sessions: p.sessions.map(s => ({

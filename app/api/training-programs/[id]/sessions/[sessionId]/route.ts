@@ -7,7 +7,8 @@ type Ctx = { params: { id: string; sessionId: string } }
 // ── PATCH : modifier une séance
 export async function PATCH(req: Request, { params }: Ctx) {
   const session = await auth()
-  if (!session || session.user.role?.toLowerCase() !== 'admin')
+  const role = session?.user.role
+  if (!session || (role !== 'ADMIN' && role !== 'COACH'))
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
   try {
@@ -34,7 +35,8 @@ export async function PATCH(req: Request, { params }: Ctx) {
 // ── DELETE : supprimer une séance
 export async function DELETE(_: Request, { params }: Ctx) {
   const session = await auth()
-  if (!session || session.user.role?.toLowerCase() !== 'admin')
+  const role = session?.user.role
+  if (!session || (role !== 'ADMIN' && role !== 'COACH'))
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
   try {

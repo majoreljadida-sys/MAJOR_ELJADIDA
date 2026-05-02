@@ -20,7 +20,8 @@ function buildMessage(session: any, programTitle: string): string {
 
 export async function POST(req: Request, { params }: Ctx) {
   const session = await auth()
-  if (!session || session.user.role?.toLowerCase() !== 'admin')
+  const role = session?.user.role
+  if (!session || (role !== 'ADMIN' && role !== 'COACH'))
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
   try {
