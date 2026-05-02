@@ -134,6 +134,7 @@ model Member {
   lastName       String
   dateOfBirth    DateTime?
   placeOfBirth   String?
+  cin            String?             // Carte d'Identité Nationale
   phone          String?
   photo          String?
   tshirtSize        TshirtSize?
@@ -255,6 +256,7 @@ model EventRegistration {
   status    RegistrationStatus @default(CONFIRMED)
   bib       String?            // Numéro de dossard
   notes     String?
+  paidAt    DateTime?          // Date de validation du paiement par l'admin (null = non payé)
   createdAt DateTime           @default(now())
 
   @@unique([memberId, eventId])

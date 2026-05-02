@@ -14,7 +14,12 @@ export async function GET(_: Request, { params }: Ctx) {
       registrations: {
         orderBy: { createdAt: 'asc' },
         include: {
-          member: { select: { id: true, firstName: true, lastName: true, phone: true, photo: true } },
+          member: {
+            select: {
+              id: true, firstName: true, lastName: true, phone: true, photo: true,
+              cin: true, tshirtSize: true, dateOfBirth: true,
+            },
+          },
         },
       },
     },

@@ -74,11 +74,15 @@ export function EventsListClient({ events: initial }: { events: Event[] }) {
                 <MapPin size={13} className="text-major-primary" />
                 {event.location}
               </div>
-              <div className="flex items-center gap-2">
-                <Users size={13} className="text-major-primary" />
-                {event._count.registrations} inscrits
-                {event.maxParticipants ? ` / ${event.maxParticipants}` : ''}
-              </div>
+              <Link
+                href={`/admin/events/${event.id}#inscrits`}
+                className="flex items-center gap-2 hover:text-major-accent transition-colors group">
+                <Users size={13} className="text-major-primary group-hover:text-major-accent" />
+                <span className="underline decoration-dotted underline-offset-2">
+                  {event._count.registrations} inscrit{event._count.registrations > 1 ? 's' : ''}
+                  {event.maxParticipants ? ` / ${event.maxParticipants}` : ''}
+                </span>
+              </Link>
             </div>
 
             {fillPct !== null && (

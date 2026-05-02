@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Save, Trash2, Youtube, Users, Phone, Clock, X } from 'lucide-react'
+import { ArrowLeft, Save, Trash2, Youtube, Users, Phone, Clock, X, CheckCircle2, Circle, Loader2, Download } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { extractYoutubeId } from '@/lib/youtube'
 import { formatDate } from '@/lib/utils'
@@ -12,7 +12,13 @@ type Registration = {
   id: string
   status: string
   createdAt: string
-  member: { id: string; firstName: string; lastName: string; phone: string | null; photo: string | null }
+  paidAt: string | null
+  member: {
+    id: string; firstName: string; lastName: string; phone: string | null; photo: string | null
+    cin: string | null
+    tshirtSize: string | null
+    dateOfBirth: string | null
+  }
 }
 
 const EVENT_TYPES = [
@@ -38,6 +44,7 @@ export default function EditEventPage() {
   const [registrations, setRegistrations] = useState<Registration[]>([])
   const [eventTitle,    setEventTitle]    = useState('')
   const [removingId,    setRemovingId]    = useState<string | null>(null)
+  const [togglingPayId, setTogglingPayId] = useState<string | null>(null)
   const [form, setForm] = useState({
     title: '', type: 'RACE', date: '', location: '', description: '',
     maxParticipants: '', price: '', distance: '', status: 'UPCOMING', videoUrl: '',
@@ -81,6 +88,57 @@ export default function EditEventPage() {
       toast.error(err.message ?? 'Erreur.')
     } finally {
       setRemovingId(null)
+    }
+  }
+
+  function exportCsv() {
+    if (registrations.length === 0) return toast.error('Aucun inscrit à exporter.')
+    const headers = ['Nom', 'Prénom', 'CIN', 'Date de naissance', 'Taille T-shirt', 'Téléphone', 'Statut', 'Paiement', 'Inscrit le']
+    const escape = (v: string | null | undefined) => {
+      const s = (v ?? '').toString().replace(/"/g, '""')
+      return /[",;\n]/.test(s) ? `"${s}"` : s
+    }
+    const rows = registrations.map(r => [
+      escape(r.member.lastName),
+      escape(r.member.firstName),
+      escape(r.member.cin),
+      escape(r.member.dateOfBirth ? formatDate(r.member.dateOfBirth, 'dd/MM/yyyy') : ''),
+      escape(r.member.tshirtSize),
+      escape(r.member.phone),
+      escape(r.status === 'CONFIRMED' ? 'Confirmé' : r.status === 'WAITING' ? 'Liste d\'attente' : 'Annulé'),
+      escape(r.paidAt ? `Payé le ${formatDate(r.paidAt, 'dd/MM/yyyy')}` : 'Non payé'),
+      escape(formatDate(r.createdAt, 'dd/MM/yyyy HH:mm')),
+    ].join(';'))
+    // BOM UTF-8 pour qu'Excel ouvre correctement les accents
+    const csv = '﻿' + headers.join(';') + '\n' + rows.join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement('a')
+    const safeTitle = (eventTitle || 'evenement').replace(/[^a-z0-9]/gi, '_').toLowerCase()
+    a.href     = url
+    a.download = `inscrits_${safeTitle}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+    toast.success(`${registrations.length} inscrit${registrations.length > 1 ? 's' : ''} exporté${registrations.length > 1 ? 's' : ''}.`)
+  }
+
+  async function togglePaid(reg: Registration) {
+    const newPaid = !reg.paidAt
+    setTogglingPayId(reg.id)
+    try {
+      const res = await fetch(`/api/events/${id}/registrations/${reg.id}`, {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ paid: newPaid }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setRegistrations(rs => rs.map(r => r.id === reg.id ? { ...r, paidAt: data.registration.paidAt } : r))
+      toast.success(newPaid ? '✅ Paiement validé !' : 'Validation retirée.')
+    } catch (err: any) {
+      toast.error(err.message ?? 'Erreur.')
+    } finally {
+      setTogglingPayId(null)
     }
   }
 
@@ -233,20 +291,30 @@ export default function EditEventPage() {
       </form>
 
       {/* ── Liste des inscrits ── */}
-      <div className="card-dark mt-8">
-        <div className="flex items-center gap-2 mb-4">
-          <Users size={18} className="text-major-primary" />
-          <h2 className="font-oswald text-white text-xl uppercase tracking-wide">Inscrits</h2>
-          <span className="badge text-xs">{registrations.length}</span>
-          {registrations.filter(r => r.status === 'CONFIRMED').length > 0 && (
-            <span className="text-xs text-major-accent font-inter ml-2">
-              {registrations.filter(r => r.status === 'CONFIRMED').length} confirmés
-            </span>
-          )}
-          {registrations.filter(r => r.status === 'WAITING').length > 0 && (
-            <span className="text-xs text-yellow-400 font-inter">
-              · {registrations.filter(r => r.status === 'WAITING').length} en attente
-            </span>
+      <div id="inscrits" className="card-dark mt-8 scroll-mt-8">
+        <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Users size={18} className="text-major-primary" />
+            <h2 className="font-oswald text-white text-xl uppercase tracking-wide">Inscrits</h2>
+            <span className="badge text-xs">{registrations.length}</span>
+            {registrations.filter(r => r.status === 'CONFIRMED').length > 0 && (
+              <span className="text-xs text-major-accent font-inter ml-2">
+                {registrations.filter(r => r.status === 'CONFIRMED').length} confirmés
+              </span>
+            )}
+            {registrations.filter(r => r.status === 'WAITING').length > 0 && (
+              <span className="text-xs text-yellow-400 font-inter">
+                · {registrations.filter(r => r.status === 'WAITING').length} en attente
+              </span>
+            )}
+          </div>
+          {registrations.length > 0 && (
+            <button
+              onClick={exportCsv}
+              className="btn-secondary flex items-center gap-2 px-4 py-2 text-xs"
+              title="Télécharge un fichier CSV (ouvrable dans Excel) avec nom, prénom, CIN, date de naissance, taille t-shirt — prêt à envoyer aux organisateurs pour les dossards.">
+              <Download size={13} /> Exporter CSV (dossards)
+            </button>
           )}
         </div>
 
@@ -255,60 +323,97 @@ export default function EditEventPage() {
             Aucune inscription pour le moment.
           </p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="table-dark">
-              <thead>
-                <tr>
-                  <th>Membre</th>
-                  <th>Téléphone</th>
-                  <th>Statut</th>
-                  <th>Inscrit le</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {registrations.map(r => (
-                  <tr key={r.id}>
-                    <td className="text-white font-medium text-sm">
-                      {r.member.firstName} {r.member.lastName}
-                    </td>
-                    <td className="text-gray-400 text-sm">
-                      {r.member.phone ? (
-                        <span className="flex items-center gap-1.5">
-                          <Phone size={12} className="text-major-primary" /> {r.member.phone}
-                        </span>
-                      ) : <span className="text-gray-600">—</span>}
-                    </td>
-                    <td>
-                      {r.status === 'CONFIRMED' && (
-                        <span className="text-xs text-major-accent font-inter font-medium">✓ Confirmé</span>
-                      )}
-                      {r.status === 'WAITING' && (
-                        <span className="text-xs text-yellow-400 font-inter font-medium">⏳ Liste d'attente</span>
-                      )}
-                      {r.status === 'CANCELLED' && (
-                        <span className="text-xs text-red-400 font-inter font-medium">✗ Annulé</span>
-                      )}
-                    </td>
-                    <td className="text-gray-500 text-xs">
-                      <span className="flex items-center gap-1.5">
-                        <Clock size={12} /> {formatDate(r.createdAt, "dd MMM yyyy 'à' HH'h'mm")}
-                      </span>
-                    </td>
-                    <td>
-                      <button
-                        onClick={() => removeRegistration(r)}
-                        disabled={removingId === r.id}
-                        className="text-gray-500 hover:text-red-400 disabled:opacity-50"
-                        title="Retirer de la liste">
-                        <X size={15} />
-                      </button>
-                    </td>
+          <>
+            {/* Compteur paiements */}
+            <div className="mb-3 text-xs font-inter text-gray-400">
+              <span className="text-major-accent font-medium">
+                {registrations.filter(r => r.paidAt).length}
+              </span> paiement{registrations.filter(r => r.paidAt).length > 1 ? 's' : ''} validé{registrations.filter(r => r.paidAt).length > 1 ? 's' : ''} sur {registrations.length}
+            </div>
+            <div className="overflow-x-auto">
+              <table className="table-dark">
+                <thead>
+                  <tr>
+                    <th>Nom · Prénom</th>
+                    <th>CIN</th>
+                    <th>Date de naissance</th>
+                    <th>T-shirt</th>
+                    <th>Téléphone</th>
+                    <th>Statut</th>
+                    <th>Paiement</th>
+                    <th></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {registrations.map(r => (
+                    <tr key={r.id}>
+                      <td className="text-white font-medium text-sm whitespace-nowrap">
+                        <div>{r.member.lastName.toUpperCase()} {r.member.firstName}</div>
+                      </td>
+                      <td className="text-gray-300 text-sm font-mono">
+                        {r.member.cin ?? <span className="text-red-400 text-xs italic">à compléter</span>}
+                      </td>
+                      <td className="text-gray-300 text-sm whitespace-nowrap">
+                        {r.member.dateOfBirth
+                          ? formatDate(r.member.dateOfBirth, 'dd/MM/yyyy')
+                          : <span className="text-red-400 text-xs italic">à compléter</span>}
+                      </td>
+                      <td className="text-gray-300 text-sm">
+                        {r.member.tshirtSize ?? <span className="text-red-400 text-xs italic">—</span>}
+                      </td>
+                      <td className="text-gray-400 text-sm whitespace-nowrap">
+                        {r.member.phone ? (
+                          <span className="flex items-center gap-1.5">
+                            <Phone size={12} className="text-major-primary" /> {r.member.phone}
+                          </span>
+                        ) : <span className="text-gray-600">—</span>}
+                      </td>
+                      <td className="whitespace-nowrap">
+                        {r.status === 'CONFIRMED' && (
+                          <span className="text-xs text-major-accent font-inter font-medium">✓ Confirmé</span>
+                        )}
+                        {r.status === 'WAITING' && (
+                          <span className="text-xs text-yellow-400 font-inter font-medium">⏳ Liste d'attente</span>
+                        )}
+                        {r.status === 'CANCELLED' && (
+                          <span className="text-xs text-red-400 font-inter font-medium">✗ Annulé</span>
+                        )}
+                      </td>
+                      <td>
+                        <button
+                          onClick={() => togglePaid(r)}
+                          disabled={togglingPayId === r.id}
+                          className={`flex items-center gap-1.5 text-xs font-inter font-medium transition-colors disabled:opacity-50 ${
+                            r.paidAt
+                              ? 'text-major-accent hover:text-major-primary'
+                              : 'text-gray-500 hover:text-major-accent'
+                          }`}
+                          title={r.paidAt ? 'Cliquer pour annuler la validation' : 'Cliquer pour valider le paiement'}>
+                          {togglingPayId === r.id
+                            ? <Loader2 size={14} className="animate-spin" />
+                            : r.paidAt
+                              ? <CheckCircle2 size={14} />
+                              : <Circle size={14} />}
+                          {r.paidAt
+                            ? <span>Payé · {formatDate(r.paidAt, 'dd MMM')}</span>
+                            : <span>Valider</span>}
+                        </button>
+                      </td>
+                      <td>
+                        <button
+                          onClick={() => removeRegistration(r)}
+                          disabled={removingId === r.id}
+                          className="text-gray-500 hover:text-red-400 disabled:opacity-50"
+                          title="Retirer de la liste">
+                          <X size={15} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </div>

@@ -19,6 +19,7 @@ export default function MemberProfilePage() {
   const [form, setForm] = useState({
     firstName: '', lastName: '', phone: '', city: '', tshirtSize: 'M',
     category: 'SENIOR', emergencyContact: '', emergencyPhone: '', bio: '',
+    cin: '', dateOfBirth: '',
   })
 
   useEffect(() => {
@@ -38,6 +39,8 @@ export default function MemberProfilePage() {
             emergencyContact: member.emergencyContact ?? '',
             emergencyPhone:   member.emergencyPhone   ?? '',
             bio: member.bio ?? '',
+            cin: member.cin ?? '',
+            dateOfBirth: member.dateOfBirth ? new Date(member.dateOfBirth).toISOString().split('T')[0] : '',
           })
           if (member.medicalCertUrl) setCertUrl(member.medicalCertUrl)
           if (member.medicalCertExpiry) setCertExpiry(new Date(member.medicalCertExpiry).toISOString().split('T')[0])
@@ -104,6 +107,16 @@ export default function MemberProfilePage() {
             <div>
               <label className="form-label">Nom</label>
               <input className="input-dark" value={form.lastName} onChange={e => set('lastName', e.target.value)} />
+            </div>
+            <div>
+              <label className="form-label">N° CIN</label>
+              <input className="input-dark" placeholder="Ex : AB123456"
+                value={form.cin} onChange={e => set('cin', e.target.value.toUpperCase())} />
+            </div>
+            <div>
+              <label className="form-label">Date de naissance</label>
+              <input type="date" className="input-dark"
+                value={form.dateOfBirth} onChange={e => set('dateOfBirth', e.target.value)} />
             </div>
             <div>
               <label className="form-label">Téléphone</label>
