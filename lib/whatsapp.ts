@@ -105,5 +105,7 @@ export function buildBlogMessage(p: BlogPostForMessage): string {
 }
 
 export function whatsappShareUrl(text: string): string {
-  return `https://wa.me/?text=${encodeURIComponent(text)}`
+  // On utilise api.whatsapp.com/send directement (et non wa.me) car le redirect
+  // wa.me → api.whatsapp.com peut re-encoder l'URL et casser les emojis UTF-8 (→ �)
+  return `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`
 }
