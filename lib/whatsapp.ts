@@ -2,7 +2,12 @@ import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { TRAINING_TYPE_LABELS, EVENT_TYPE_LABELS } from './utils'
 
-const SITE_URL = process.env.NEXTAUTH_URL?.replace(/\/$/, '') ?? 'https://major-club.ma'
+// On évite process.env.NEXTAUTH_URL côté client (non exposé au navigateur sans préfixe NEXT_PUBLIC_).
+// window.location.origin donne toujours l'URL correcte du déploiement courant.
+function getSiteUrl(): string {
+  if (typeof window !== 'undefined') return window.location.origin
+  return process.env.NEXTAUTH_URL?.replace(/\/$/, '') ?? 'https://major-eljadida.vercel.app'
+}
 
 export type TrainingForMessage = {
   title: string
@@ -67,7 +72,7 @@ export function buildTrainingMessage(t: TrainingForMessage): string {
     '',
     t.description,
     '',
-    `📋 Programme complet du mois : ${SITE_URL}/entrainements`,
+    `📋 Programme complet du mois : ${getSiteUrl()}/entrainements`,
     '',
     isSameDay(sessionDate, today)
       ? 'À tout à l\'heure ! 💪'
@@ -89,7 +94,7 @@ export function buildEventMessage(e: EventForMessage): string {
   if (e.price)    lines.push(`💰 ${e.price} MAD`)
   lines.push('', e.description)
   lines.push('', '📝 *Inscriptions ouvertes*')
-  lines.push(`👉 ${SITE_URL}/evenements/${e.slug}`)
+  lines.push(`👉 ${getSiteUrl()}/events`)
   return lines.join('\n')
 }
 
@@ -102,7 +107,7 @@ export function buildBlogMessage(p: BlogPostForMessage): string {
   if (p.category) lines.push(`📂 ${p.category.name}`)
   lines.push('', p.excerpt)
   if (p.readTime) lines.push('', `⏱️ Lecture : ${p.readTime} min`)
-  lines.push('', `👉 ${SITE_URL}/blog/${p.slug}`)
+  lines.push('', `👉 ${getSiteUrl()}/blog/${p.slug}`)
   return lines.join('\n')
 }
 
