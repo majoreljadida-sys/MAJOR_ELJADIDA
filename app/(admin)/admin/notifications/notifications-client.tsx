@@ -93,10 +93,10 @@ export function NotificationsClient({ trainings, events, posts, history: initHis
         </p>
       </div>
 
-      {/* ── Entraînement du jour ───────────────────────────────────────────── */}
-      <Section icon={Activity} title="Entraînement du jour" count={trainings.length}>
+      {/* ── Prochaines séances ─────────────────────────────────────────────── */}
+      <Section icon={Activity} title="Prochaines séances" count={trainings.length}>
         {trainings.length === 0 ? (
-          <Empty text="Aucune séance prévue aujourd'hui." />
+          <Empty text="Aucune séance à venir." />
         ) : (
           trainings.map(t => {
             const message = buildTrainingMessage(t)

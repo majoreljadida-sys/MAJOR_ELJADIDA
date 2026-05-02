@@ -9,14 +9,14 @@ export default async function AdminNotificationsPage() {
   const session = await auth()
   if (!session || session.user.role !== 'ADMIN') redirect('/login')
 
-  // Bornes "aujourd'hui" en heure locale serveur
-  const start = new Date(); start.setHours(0, 0, 0, 0)
-  const end   = new Date(); end.setHours(23, 59, 59, 999)
+  // Aujourd'hui à 00:00 (sert de borne basse pour inclure une séance plus tard dans la journée)
+  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
 
-  const [todaySessions, events, posts, history] = await Promise.all([
+  const [upcomingSessions, events, posts, history] = await Promise.all([
     prisma.trainingSession.findMany({
-      where:   { date: { gte: start, lte: end }, status: { not: 'CANCELLED' } },
+      where:   { date: { gte: todayStart }, status: { not: 'CANCELLED' } },
       orderBy: { date: 'asc' },
+      take:    3,
       include: {
         group: { select: { name: true } },
         coach: { select: { firstName: true, lastName: true } },
@@ -46,7 +46,7 @@ export default async function AdminNotificationsPage() {
 
   return (
     <NotificationsClient
-      trainings={todaySessions.map(t => ({
+      trainings={upcomingSessions.map(t => ({
         id:       t.id,
         title:    t.title,
         date:     t.date.toISOString(),

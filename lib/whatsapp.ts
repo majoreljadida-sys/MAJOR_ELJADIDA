@@ -39,9 +39,24 @@ function fmtDate(d: Date | string, pattern: string) {
   return format(date, pattern, { locale: fr })
 }
 
+function isSameDay(a: Date, b: Date) {
+  return a.getFullYear() === b.getFullYear()
+      && a.getMonth()    === b.getMonth()
+      && a.getDate()     === b.getDate()
+}
+
 export function buildTrainingMessage(t: TrainingForMessage): string {
+  const sessionDate = typeof t.date === 'string' ? new Date(t.date) : t.date
+  const today    = new Date()
+  const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1)
+
+  let header: string
+  if      (isSameDay(sessionDate, today))    header = '🏃 *MAJOR — Entraînement du jour*'
+  else if (isSameDay(sessionDate, tomorrow)) header = '🏃 *MAJOR — Entraînement de demain*'
+  else                                        header = '🏃 *MAJOR — Prochaine séance*'
+
   const lines = [
-    '🏃 *MAJOR — Entraînement du jour*',
+    header,
     '',
     `*${t.title}*`,
     `🕐 ${fmtDate(t.date, "EEEE dd MMMM 'à' HH'h'mm")}`,
@@ -51,7 +66,9 @@ export function buildTrainingMessage(t: TrainingForMessage): string {
   if (t.group)            lines.push(`👥 Groupe : ${t.group.name}`)
   if (t.coach)            lines.push(`👨‍🏫 Coach : ${t.coach.firstName} ${t.coach.lastName}`)
   if (t.duration)         lines.push(`⏱️ Durée : ${t.duration} min`)
-  lines.push('', 'À tout à l\'heure ! 💪')
+  lines.push('', isSameDay(sessionDate, today)
+    ? 'À tout à l\'heure ! 💪'
+    : 'On compte sur vous ! 💪')
   return lines.join('\n')
 }
 
