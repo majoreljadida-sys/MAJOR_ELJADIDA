@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
-import { CheckCircle, XCircle, MoreHorizontal, Trash2, Clock, UserCog, X, Loader2 } from 'lucide-react'
+import { CheckCircle, XCircle, MoreHorizontal, Trash2, Clock, UserCog, X, Loader2, UserMinus } from 'lucide-react'
 
 interface Props {
   memberId: string
@@ -72,6 +72,23 @@ export function MemberActions({ memberId, currentStatus, memberName, memberEmail
     }
   }
 
+  async function demoteFromCoach() {
+    setOpen(false)
+    if (!confirm(`Retirer le rôle coach à ${memberName ?? 'ce membre'} ?\n\nIl/elle sera désassigné(e) de ses groupes et séances. Sa fiche d'adhérent reste intacte.`)) return
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/members/${memberId}/promote-to-coach`, { method: 'DELETE' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      toast.success(`Rôle coach retiré.`)
+      router.refresh()
+    } catch (err: any) {
+      toast.error(err.message ?? 'Erreur.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   async function promoteToCoach() {
     setPromoting(true)
     try {
@@ -133,9 +150,10 @@ export function MemberActions({ memberId, currentStatus, memberName, memberEmail
             <div className="border-t border-gray-800 my-1" />
 
             {isAlreadyCoach ? (
-              <div className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-500 italic">
-                <UserCog size={14} /> Déjà coach
-              </div>
+              <button onClick={demoteFromCoach}
+                className="flex items-center gap-2 px-4 py-2.5 text-sm text-orange-400 hover:bg-orange-900/20 w-full text-left transition-colors">
+                <UserMinus size={14} /> Retirer le rôle coach
+              </button>
             ) : (
               <button
                 onClick={() => { setOpen(false); setShowPromote(true) }}
