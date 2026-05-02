@@ -9,10 +9,10 @@ import {
 } from '@/lib/whatsapp'
 
 type Training = {
-  id: string; title: string; date: string; location: string; type: string
-  duration: number | null
-  coach: { firstName: string; lastName: string } | null
-  group: { name: string } | null
+  id: string; title: string; dateFrom: string; dateTo: string | null
+  description: string; type: string
+  programTitle: string
+  reminderSent: boolean
 }
 type Event = {
   id: string; slug: string; title: string; date: string; location: string
@@ -100,13 +100,16 @@ export function NotificationsClient({ trainings, events, posts, history: initHis
         ) : (
           trainings.map(t => {
             const message = buildTrainingMessage(t)
-            const sent = sentRefIds.has(`TRAINING:${t.id}`)
+            const sent = sentRefIds.has(`TRAINING:${t.id}`) || t.reminderSent
+            const dateLabel = t.dateTo
+              ? `${formatDate(t.dateFrom, "EEEE dd MMM")} → ${formatDate(t.dateTo, "dd MMM")}`
+              : formatDate(t.dateFrom, "EEEE dd MMMM yyyy")
             return (
               <NotifCard
                 key={t.id}
                 badge={TRAINING_TYPE_LABELS[t.type] ?? t.type}
                 title={t.title}
-                meta={`${formatDate(t.date, "EEEE dd MMMM 'à' HH'h'mm")} · ${t.location || 'Lieu non précisé'}`}
+                meta={`${dateLabel} · ${t.programTitle}`}
                 message={message}
                 sent={sent}
                 onSend={msg => sendOnWhatsapp(msg, 'TRAINING', t.id, t.title)}

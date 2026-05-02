@@ -9,17 +9,16 @@ export default async function AdminNotificationsPage() {
   const session = await auth()
   if (!session || session.user.role !== 'ADMIN') redirect('/login')
 
-  // Aujourd'hui à 00:00 (sert de borne basse pour inclure une séance plus tard dans la journée)
+  // Aujourd'hui à 00:00 (borne basse — inclut une séance plus tard dans la journée)
   const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
 
   const [upcomingSessions, events, posts, history] = await Promise.all([
-    prisma.trainingSession.findMany({
-      where:   { date: { gte: todayStart }, status: { not: 'CANCELLED' } },
-      orderBy: { date: 'asc' },
+    prisma.trainingProgramSession.findMany({
+      where:   { dateFrom: { gte: todayStart } },
+      orderBy: { dateFrom: 'asc' },
       take:    3,
       include: {
-        group: { select: { name: true } },
-        coach: { select: { firstName: true, lastName: true } },
+        program: { select: { title: true, month: true, year: true } },
       },
     }),
     prisma.event.findMany({
@@ -47,14 +46,14 @@ export default async function AdminNotificationsPage() {
   return (
     <NotificationsClient
       trainings={upcomingSessions.map(t => ({
-        id:       t.id,
-        title:    t.title,
-        date:     t.date.toISOString(),
-        location: t.location,
-        type:     t.type,
-        duration: t.duration,
-        coach:    t.coach,
-        group:    t.group,
+        id:           t.id,
+        title:        t.title,
+        dateFrom:     t.dateFrom.toISOString(),
+        dateTo:       t.dateTo?.toISOString() ?? null,
+        description:  t.description,
+        type:         t.type,
+        programTitle: t.program.title,
+        reminderSent: t.reminderSent,
       }))}
       events={events.map(e => ({
         id:          e.id,

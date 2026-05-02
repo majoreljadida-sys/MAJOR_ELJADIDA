@@ -6,12 +6,11 @@ const SITE_URL = process.env.NEXTAUTH_URL?.replace(/\/$/, '') ?? 'https://major-
 
 export type TrainingForMessage = {
   title: string
-  date: Date | string
-  location: string | null
+  dateFrom: Date | string
+  dateTo: Date | string | null
+  description: string
   type: string
-  duration: number | null
-  coach: { firstName: string; lastName: string } | null
-  group: { name: string } | null
+  programTitle: string
 }
 
 export type EventForMessage = {
@@ -46,7 +45,7 @@ function isSameDay(a: Date, b: Date) {
 }
 
 export function buildTrainingMessage(t: TrainingForMessage): string {
-  const sessionDate = typeof t.date === 'string' ? new Date(t.date) : t.date
+  const sessionDate = typeof t.dateFrom === 'string' ? new Date(t.dateFrom) : t.dateFrom
   const today    = new Date()
   const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1)
 
@@ -55,20 +54,23 @@ export function buildTrainingMessage(t: TrainingForMessage): string {
   else if (isSameDay(sessionDate, tomorrow)) header = '🏃 *MAJOR — Entraînement de demain*'
   else                                        header = '🏃 *MAJOR — Prochaine séance*'
 
+  const dateRange = t.dateTo
+    ? `${fmtDate(t.dateFrom, 'EEEE dd MMM')} → ${fmtDate(t.dateTo, 'EEEE dd MMM yyyy')}`
+    : fmtDate(t.dateFrom, 'EEEE dd MMMM yyyy')
+
   const lines = [
     header,
+    `_${t.programTitle}_`,
     '',
-    `*${t.title}*`,
-    `🕐 ${fmtDate(t.date, "EEEE dd MMMM 'à' HH'h'mm")}`,
+    `📅 ${dateRange}`,
+    `🏋️ *${t.title}*  ·  ${TRAINING_TYPE_LABELS[t.type] ?? t.type}`,
+    '',
+    t.description,
+    '',
+    isSameDay(sessionDate, today)
+      ? 'À tout à l\'heure ! 💪'
+      : 'On compte sur vous ! 💪',
   ]
-  if (t.location)         lines.push(`📍 ${t.location}`)
-  lines.push(`🏋️ ${TRAINING_TYPE_LABELS[t.type] ?? t.type}`)
-  if (t.group)            lines.push(`👥 Groupe : ${t.group.name}`)
-  if (t.coach)            lines.push(`👨‍🏫 Coach : ${t.coach.firstName} ${t.coach.lastName}`)
-  if (t.duration)         lines.push(`⏱️ Durée : ${t.duration} min`)
-  lines.push('', isSameDay(sessionDate, today)
-    ? 'À tout à l\'heure ! 💪'
-    : 'On compte sur vous ! 💪')
   return lines.join('\n')
 }
 
