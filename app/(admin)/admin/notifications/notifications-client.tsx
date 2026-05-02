@@ -5,7 +5,7 @@ import { Activity, Trophy, BookOpen, Send, Check, MessageSquare, Copy, History, 
 import toast from 'react-hot-toast'
 import { formatDate, timeAgo, TRAINING_TYPE_LABELS, EVENT_TYPE_LABELS } from '@/lib/utils'
 import {
-  buildTrainingMessage, buildEventMessage, buildBlogMessage, whatsappShareUrl,
+  buildTrainingMessage, buildEventMessage, buildBlogMessage,
 } from '@/lib/whatsapp'
 
 type Training = {
@@ -59,11 +59,20 @@ export function NotificationsClient({ trainings, events, posts, history: initHis
     }
   }
 
-  function sendOnWhatsapp(message: string, type: 'TRAINING' | 'EVENT' | 'BLOG' | 'CUSTOM', refId: string | null, title: string) {
+  async function sendOnWhatsapp(message: string, type: 'TRAINING' | 'EVENT' | 'BLOG' | 'CUSTOM', refId: string | null, title: string) {
     if (!message.trim()) return toast.error('Message vide.')
-    window.open(whatsappShareUrl(message), '_blank', 'noopener,noreferrer')
+    // On copie le message dans le presse-papier puis on ouvre WhatsApp Web.
+    // L'URL ?text= d'api.whatsapp.com casse les emojis 4-bytes (🏃📅🏋️ → �)
+    // donc on bascule sur "copier puis coller" — fiable à 100%.
+    try {
+      await navigator.clipboard.writeText(message)
+    } catch {
+      toast.error('Impossible de copier le message dans le presse-papier.')
+      return
+    }
+    window.open('https://web.whatsapp.com/', '_blank', 'noopener,noreferrer')
     logSend(type, refId, title, message)
-    toast.success('WhatsApp ouvert. Sélectionne le groupe MAJOR et envoie.', { duration: 4000 })
+    toast.success('Message copié ! Sélectionne le groupe MAJOR puis colle (Ctrl+V).', { duration: 6000 })
   }
 
   async function copyMessage(message: string) {
@@ -89,7 +98,7 @@ export function NotificationsClient({ trainings, events, posts, history: initHis
           Envoie au groupe WhatsApp MAJOR : entraînement du jour, événements, articles.
         </p>
         <p className="text-gray-500 font-inter text-xs mt-2 italic">
-          💡 Le bouton ouvre WhatsApp avec le message pré-rempli. Sélectionne le groupe MAJOR puis envoie.
+          💡 Le bouton copie le message et ouvre WhatsApp Web. Sélectionne le groupe MAJOR puis colle (Ctrl+V) et envoie.
         </p>
       </div>
 
