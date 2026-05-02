@@ -67,6 +67,8 @@ export function buildTrainingMessage(t: TrainingForMessage): string {
     '',
     t.description,
     '',
+    `📋 Programme complet du mois : ${SITE_URL}/entrainements`,
+    '',
     isSameDay(sessionDate, today)
       ? 'À tout à l\'heure ! 💪'
       : 'On compte sur vous ! 💪',
