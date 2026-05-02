@@ -213,19 +213,21 @@ export function EventsContent({ upcoming, completed, videos, channelId, isLogged
                 </p>
               </div>
 
-              {confirmEvent.price && confirmEvent.price > 0 ? (
+              {confirmEvent.price && confirmEvent.price > 0 && (
                 <div className="bg-major-primary/10 border border-major-primary/30 rounded-xl p-4 space-y-2">
-                  <p className="text-gray-400 text-xs font-inter uppercase tracking-widest">Frais de préinscription</p>
+                  <p className="text-gray-400 text-xs font-inter uppercase tracking-widest">Frais indicatifs</p>
                   <p className="font-bebas text-3xl text-major-accent">{formatCurrency(confirmEvent.price, 'MAD')}</p>
+                  <p className="text-gray-400 text-xs font-inter italic">
+                    Modalités de règlement communiquées ultérieurement par le bureau du club.
+                  </p>
                 </div>
-              ) : (
-                <p className="text-major-accent font-inter text-sm">Inscription gratuite.</p>
               )}
 
               <div className="flex items-start gap-2 text-yellow-300 bg-yellow-900/10 border border-yellow-500/20 rounded-xl p-3">
                 <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
                 <p className="text-xs font-inter leading-relaxed">
-                  En confirmant, je m'engage à régler les frais de préinscription auprès du club avant l'événement.
+                  En confirmant, je m'engage formellement à participer à cet événement avec le Club MAJOR.
+                  Les modalités pratiques (logistique, frais éventuels) seront communiquées par le bureau.
                 </p>
               </div>
             </div>

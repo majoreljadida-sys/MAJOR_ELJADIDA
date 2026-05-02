@@ -35,21 +35,9 @@ export async function POST(_req: Request, { params }: Ctx) {
       data: { memberId, eventId: event.id, status: regStatus },
     })
 
-    // Création d'un Payment PENDING si l'événement a un prix > 0 et inscription confirmée
-    let payment = null
-    if (event.price && event.price > 0 && regStatus === 'CONFIRMED') {
-      payment = await prisma.payment.create({
-        data: {
-          memberId,
-          amount: event.price,
-          type:   'EVENEMENTIELLE',
-          status: 'PENDING',
-          notes:  `[reg:${registration.id}] Préinscription : ${event.title}`,
-        },
-      })
-    }
-
-    return NextResponse.json({ registration, payment, status: regStatus }, { status: 201 })
+    // Pas de Payment auto-créé : l'inscription est un engagement, le paiement
+    // sera enregistré manuellement par l'admin quand le membre règlera.
+    return NextResponse.json({ registration, status: regStatus }, { status: 201 })
   } catch (err) {
     console.error('[EVENT REGISTER POST]', err)
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 })
@@ -70,15 +58,6 @@ export async function DELETE(_req: Request, { params }: Ctx) {
       where: { memberId_eventId: { memberId, eventId: params.id } },
     })
     if (!registration) return NextResponse.json({ error: 'Inscription introuvable.' }, { status: 404 })
-
-    // On supprime aussi le Payment PENDING associé (référence par les notes)
-    await prisma.payment.deleteMany({
-      where: {
-        memberId,
-        status: 'PENDING',
-        notes:  { contains: `[reg:${registration.id}]` },
-      },
-    })
 
     await prisma.eventRegistration.delete({ where: { id: registration.id } })
 
