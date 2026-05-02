@@ -378,3 +378,24 @@ model ChatbotLog {
 
   @@map("chatbot_logs")
 }
+
+enum WhatsappNotificationType {
+  TRAINING
+  EVENT
+  BLOG
+  CUSTOM
+}
+
+model WhatsappNotification {
+  id        String                   @id @default(cuid())
+  type      WhatsappNotificationType
+  refId     String?                  // id de la séance, événement ou article (null pour message libre)
+  title     String
+  message   String                   @db.Text
+  sentBy    String                   // userId de l'admin
+  sentAt    DateTime                 @default(now())
+
+  @@index([sentAt])
+  @@index([type, refId])
+  @@map("whatsapp_notifications")
+}

@@ -29,6 +29,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/admin/events',    icon: Trophy,          label: 'Événements'      },
   { href: '/admin/payments',  icon: CreditCard,      label: 'Paiements'       },
   { href: '/admin/blog',      icon: BookOpen,        label: 'Blog'            },
+  { href: '/admin/notifications', icon: Bell,        label: 'Notifications'   },
 ]
 
 const COACH_NAV: NavItem[] = [
