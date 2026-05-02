@@ -1,24 +1,77 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { formatDate, EVENT_TYPE_LABELS, getEventTypeColor, formatCurrency } from '@/lib/utils'
-import { MapPin, Clock, Users, ArrowRight, Youtube } from 'lucide-react'
+import { MapPin, Clock, Users, ArrowRight, Youtube, Check, X, Loader2, AlertCircle } from 'lucide-react'
+import toast from 'react-hot-toast'
 import { useLanguage } from '@/lib/i18n/context'
 import { YoutubeGallery } from '@/components/youtube/youtube-gallery'
 import type { YoutubeVideo } from '@/lib/youtube'
 import type { Event } from '@prisma/client'
 
 type EventWithCount = Event & { _count: { registrations: number } }
+type MyRegistration = { eventId: string; status: string }
 
 interface Props {
   upcoming:  EventWithCount[]
   completed: EventWithCount[]
   videos:    YoutubeVideo[]
   channelId: string
+  isLoggedIn: boolean
+  isMember:   boolean
+  myRegistrations: MyRegistration[]
 }
 
-export function EventsContent({ upcoming, completed, videos, channelId }: Props) {
-  const { t } = useLanguage()
+export function EventsContent({ upcoming, completed, videos, channelId, isLoggedIn, isMember, myRegistrations }: Props) {
+  const { t }  = useLanguage()
+  const router = useRouter()
+  // Map des inscriptions actuelles : eventId → status
+  const [regs, setRegs] = useState<Map<string, string>>(
+    () => new Map(myRegistrations.map(r => [r.eventId, r.status]))
+  )
+  const [confirmEvent, setConfirmEvent] = useState<EventWithCount | null>(null)
+  const [busyId,       setBusyId]       = useState<string | null>(null)
+
+  async function register(event: EventWithCount) {
+    setBusyId(event.id)
+    try {
+      const res  = await fetch(`/api/events/${event.id}/register`, { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setRegs(m => new Map(m).set(event.id, data.status))
+      setConfirmEvent(null)
+      toast.success(
+        data.status === 'WAITING'
+          ? '⏳ Inscrit en liste d\'attente.'
+          : '✅ Inscription confirmée !',
+        { duration: 5000 }
+      )
+      router.refresh()
+    } catch (err: any) {
+      toast.error(err.message ?? 'Erreur.')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  async function cancel(eventId: string) {
+    if (!confirm('Confirmer l\'annulation de ton inscription ?')) return
+    setBusyId(eventId)
+    try {
+      const res  = await fetch(`/api/events/${eventId}/register`, { method: 'DELETE' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setRegs(m => { const next = new Map(m); next.delete(eventId); return next })
+      toast.success('Inscription annulée.')
+      router.refresh()
+    } catch (err: any) {
+      toast.error(err.message ?? 'Erreur.')
+    } finally {
+      setBusyId(null)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-major-black pb-24">
@@ -85,13 +138,19 @@ export function EventsContent({ upcoming, completed, videos, channelId }: Props)
                         </div>
                       </div>
                     )}
-                    <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-800">
+                    <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-800 gap-2">
                       <span className="font-oswald font-bold text-major-accent text-xl">
                         {event.price === 0 ? t.events.free : event.price ? formatCurrency(event.price, 'MAD') : t.events.onRequest}
                       </span>
-                      <Link href="/login" className="flex items-center gap-1.5 text-sm text-major-cyan font-inter font-medium hover:text-white transition-colors">
-                        {t.events.register} <ArrowRight size={14} />
-                      </Link>
+                      <RegistrationButton
+                        event={event}
+                        isLoggedIn={isLoggedIn}
+                        isMember={isMember}
+                        registrationStatus={regs.get(event.id) ?? null}
+                        busy={busyId === event.id}
+                        onRegister={() => setConfirmEvent(event)}
+                        onCancel={() => cancel(event.id)}
+                      />
                     </div>
                   </article>
                 )
@@ -131,6 +190,120 @@ export function EventsContent({ upcoming, completed, videos, channelId }: Props)
         </section>
 
       </div>
+
+      {/* ── Modale de confirmation d'inscription ── */}
+      {confirmEvent && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-major-dark border border-major-primary/40 rounded-2xl w-full max-w-md p-6 space-y-5">
+            <div className="flex items-center justify-between">
+              <h3 className="font-oswald text-white text-xl uppercase tracking-wide">Confirmer mon inscription</h3>
+              <button onClick={() => setConfirmEvent(null)} className="text-gray-500 hover:text-white">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-gray-300 font-inter text-sm">
+                Tu vas t'inscrire à&nbsp;:
+              </p>
+              <div className="card-dark border-major-primary/30">
+                <p className="font-oswald text-white text-lg font-semibold">{confirmEvent.title}</p>
+                <p className="text-gray-400 text-xs font-inter mt-1">
+                  {formatDate(confirmEvent.date, "EEEE dd MMMM yyyy")} · {confirmEvent.location}
+                </p>
+              </div>
+
+              {confirmEvent.price && confirmEvent.price > 0 ? (
+                <div className="bg-major-primary/10 border border-major-primary/30 rounded-xl p-4 space-y-2">
+                  <p className="text-gray-400 text-xs font-inter uppercase tracking-widest">Frais de préinscription</p>
+                  <p className="font-bebas text-3xl text-major-accent">{formatCurrency(confirmEvent.price, 'MAD')}</p>
+                </div>
+              ) : (
+                <p className="text-major-accent font-inter text-sm">Inscription gratuite.</p>
+              )}
+
+              <div className="flex items-start gap-2 text-yellow-300 bg-yellow-900/10 border border-yellow-500/20 rounded-xl p-3">
+                <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
+                <p className="text-xs font-inter leading-relaxed">
+                  En confirmant, je m'engage à régler les frais de préinscription auprès du club avant l'événement.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={() => setConfirmEvent(null)}
+                className="btn-secondary flex-1 py-2.5 text-sm">
+                Annuler
+              </button>
+              <button
+                onClick={() => register(confirmEvent)}
+                disabled={busyId === confirmEvent.id}
+                className="btn-primary flex-1 flex items-center justify-center gap-2 py-2.5 text-sm disabled:opacity-50">
+                {busyId === confirmEvent.id
+                  ? <><Loader2 size={15} className="animate-spin" /> Inscription…</>
+                  : <><Check size={15} /> Je m'engage</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+  )
+}
+
+function RegistrationButton({ event, isLoggedIn, isMember, registrationStatus, busy, onRegister, onCancel }: {
+  event: EventWithCount
+  isLoggedIn: boolean
+  isMember:   boolean
+  registrationStatus: string | null
+  busy: boolean
+  onRegister: () => void
+  onCancel:   () => void
+}) {
+  // Pas connecté → bouton "S'inscrire" qui mène à /login
+  if (!isLoggedIn) {
+    return (
+      <Link href="/login" className="flex items-center gap-1.5 text-sm text-major-cyan font-inter font-medium hover:text-white transition-colors whitespace-nowrap">
+        S'inscrire <ArrowRight size={14} />
+      </Link>
+    )
+  }
+
+  // Connecté mais pas membre (admin/coach)
+  if (!isMember) {
+    return (
+      <span className="text-xs text-gray-500 font-inter italic whitespace-nowrap">Réservé aux adhérents</span>
+    )
+  }
+
+  // Membre déjà inscrit
+  if (registrationStatus) {
+    const isWaiting = registrationStatus === 'WAITING'
+    return (
+      <div className="flex flex-col items-end gap-1">
+        <span className={`flex items-center gap-1 text-xs font-inter font-medium whitespace-nowrap ${isWaiting ? 'text-yellow-400' : 'text-major-accent'}`}>
+          <Check size={12} /> {isWaiting ? 'Liste d\'attente' : 'Inscrit'}
+        </span>
+        <button
+          onClick={onCancel}
+          disabled={busy}
+          className="text-xs text-gray-500 hover:text-red-400 font-inter underline disabled:opacity-50">
+          {busy ? 'Annulation…' : 'Annuler'}
+        </button>
+      </div>
+    )
+  }
+
+  // Membre, pas inscrit → ouvre la modale
+  const isFull = event.maxParticipants !== null && event._count.registrations >= event.maxParticipants
+  return (
+    <button
+      onClick={onRegister}
+      disabled={busy}
+      className="btn-primary flex items-center gap-1.5 text-sm py-2 px-4 disabled:opacity-50 whitespace-nowrap">
+      {busy ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+      {isFull ? 'Liste d\'attente' : 'S\'inscrire'}
+    </button>
   )
 }
