@@ -118,12 +118,11 @@ export function EventsContent({ upcoming, completed, videos, channelId, isLogged
                     <div className="space-y-1.5 mb-4 text-sm font-inter text-gray-400">
                       <div className="flex items-center gap-2"><MapPin size={13} className="text-major-primary flex-shrink-0" /><span className="truncate">{event.location}</span></div>
                       {event.distance && <div className="flex items-center gap-2"><Clock size={13} className="text-major-primary flex-shrink-0" />{event.distance}</div>}
-                      {event.maxParticipants && (
-                        <div className="flex items-center gap-2">
-                          <Users size={13} className="text-major-primary flex-shrink-0" />
-                          {event._count.registrations} / {event.maxParticipants} {t.events.registered}
-                        </div>
-                      )}
+                      <div className="flex items-center gap-2">
+                        <Users size={13} className="text-major-primary flex-shrink-0" />
+                        {event._count.registrations}
+                        {event.maxParticipants ? ` / ${event.maxParticipants}` : ''} {t.events.registered}
+                      </div>
                     </div>
                     <p className="text-gray-500 text-sm font-inter leading-relaxed flex-1 mb-4 line-clamp-3">{event.description}</p>
                     {fillPct !== null && (
