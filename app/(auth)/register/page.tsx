@@ -105,7 +105,7 @@ export default function RegisterPage() {
 
   const [form, setForm] = useState({
     firstName: '', lastName: '', email: '', phone: '', password: '', confirmPassword: '',
-    birthDate: '', city: 'El Jadida', tshirtSize: 'M', category: 'SENIOR',
+    birthDate: '', cin: '', city: 'El Jadida', tshirtSize: 'M', category: 'SENIOR',
   })
 
   function set(k: string, v: string) { setForm(f => ({ ...f, [k]: v })) }
@@ -194,13 +194,23 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="form-label">Téléphone</label>
+              <label className="form-label">Téléphone *</label>
               <input type="tel" className="input-dark" placeholder="+212 6XX XXX XXX" value={form.phone} onChange={e => set('phone', e.target.value)} />
             </div>
 
             <div>
-              <label className="form-label">Date de naissance</label>
+              <label className="form-label">Date de naissance *</label>
               <input type="date" className="input-dark" value={form.birthDate} onChange={e => set('birthDate', e.target.value)} />
+            </div>
+
+            <div>
+              <label className="form-label">N° CIN *</label>
+              <input className="input-dark" placeholder="Ex : AB123456"
+                value={form.cin}
+                onChange={e => set('cin', e.target.value.toUpperCase().trim())} />
+              <p className="text-gray-500 text-[11px] font-inter mt-1">
+                Carte d'Identité Nationale — nécessaire pour les inscriptions aux courses officielles.
+              </p>
             </div>
 
             <div>
@@ -227,12 +237,22 @@ export default function RegisterPage() {
             </div>
 
             <button type="button" onClick={() => {
-              if (!form.firstName || !form.lastName || !form.email || !form.password)
-                return setError('Veuillez remplir tous les champs obligatoires.')
+              const missing: string[] = []
+              if (!form.firstName.trim()) missing.push('Prénom')
+              if (!form.lastName.trim())  missing.push('Nom')
+              if (!form.email.trim())     missing.push('Email')
+              if (!form.phone.trim())     missing.push('Téléphone')
+              if (!form.birthDate)        missing.push('Date de naissance')
+              if (!form.cin.trim())       missing.push('N° CIN')
+              if (!form.password)         missing.push('Mot de passe')
+              if (missing.length > 0)
+                return setError(`Champs obligatoires manquants : ${missing.join(', ')}.`)
               if (form.password !== form.confirmPassword)
                 return setError('Les mots de passe ne correspondent pas.')
               if (form.password.length < 8)
                 return setError('Le mot de passe doit comporter au moins 8 caractères.')
+              if (form.cin.length < 4)
+                return setError('Le N° CIN saisi semble incorrect.')
               setError(''); setStep(2)
             }} className="btn-primary w-full py-3.5 font-inter text-sm font-semibold">
               Continuer →
