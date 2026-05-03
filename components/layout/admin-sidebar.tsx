@@ -6,7 +6,7 @@ import { signOut, useSession } from 'next-auth/react'
 import {
   LayoutDashboard, Users, Calendar, Trophy, CreditCard,
   Bell, Settings, LogOut, ChevronRight, BookOpen,
-  Activity, Shield, ExternalLink, Menu, X,
+  Activity, Shield, ExternalLink, Menu, X, User as UserIcon,
 } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
 import { initials } from '@/lib/utils'
@@ -35,6 +35,9 @@ const NAV_ITEMS: NavItem[] = [
 const COACH_NAV: NavItem[] = [
   { href: '/coach/trainings',     icon: Activity,        label: 'Entraînements'   },
   { href: '/coach/programs',      icon: Calendar,        label: 'Programmes'      },
+  { href: '/member/profile',      icon: UserIcon,        label: 'Mon profil'      },
+  { href: '/member/payments',     icon: CreditCard,      label: 'Mes paiements'   },
+  { href: '/events',              icon: Trophy,          label: 'Événements'      },
 ]
 
 interface SidebarProps {
