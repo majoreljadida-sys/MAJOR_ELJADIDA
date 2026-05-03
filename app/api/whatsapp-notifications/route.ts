@@ -6,8 +6,7 @@ const VALID_TYPES = ['TRAINING', 'EVENT', 'BLOG', 'CUSTOM'] as const
 
 export async function POST(req: Request) {
   const session = await auth()
-  const role = session?.user.role
-  if (!session || (role !== 'ADMIN' && role !== 'COACH'))
+  if (!session || session.user.role !== 'ADMIN')
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
   try {

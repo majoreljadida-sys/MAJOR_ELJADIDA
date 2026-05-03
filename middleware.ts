@@ -29,7 +29,7 @@ export default auth((req) => {
 
   if ((pathname === '/login' || pathname === '/register') && isLoggedIn) {
     if (role === 'admin') return NextResponse.redirect(new URL('/admin/dashboard', req.url))
-    if (role === 'coach') return NextResponse.redirect(new URL('/coach/dashboard', req.url))
+    if (role === 'coach') return NextResponse.redirect(new URL('/coach/trainings', req.url))
     return NextResponse.redirect(new URL('/member/dashboard', req.url))
   }
 

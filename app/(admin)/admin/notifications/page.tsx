@@ -7,8 +7,7 @@ export const dynamic = 'force-dynamic'
 
 export default async function AdminNotificationsPage() {
   const session = await auth()
-  const role = session?.user.role
-  if (!session || (role !== 'ADMIN' && role !== 'COACH')) redirect('/login')
+  if (!session || session.user.role !== 'ADMIN') redirect('/login')
 
   // Aujourd'hui à 00:00 (borne basse — inclut une séance plus tard dans la journée)
   const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)

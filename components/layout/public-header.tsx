@@ -37,7 +37,7 @@ export function PublicHeader() {
   function dashboardHref() {
     const role = session?.user?.role
     if (role === 'ADMIN')  return '/admin/dashboard'
-    if (role === 'COACH')  return '/coach/dashboard'
+    if (role === 'COACH')  return '/coach/trainings'
     return '/member/dashboard'
   }
 
