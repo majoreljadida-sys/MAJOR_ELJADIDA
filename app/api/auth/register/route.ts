@@ -8,7 +8,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json()
     const { firstName, lastName, email, phone, password, birthDate, cin, city,
-            tshirtSize, category, medicalCertUrl, medicalCertExpiry } = body
+            tshirtSize, category, photo, medicalCertUrl, medicalCertExpiry } = body
 
     const missing: string[] = []
     if (!firstName) missing.push('firstName')
@@ -42,6 +42,7 @@ export async function POST(req: Request) {
             lastName,
             phone,
             cin:           cin.toUpperCase().trim(),
+            photo:         photo || null,
             licenseNumber,
             dateOfBirth:   new Date(birthDate),
             placeOfBirth:  city || null,

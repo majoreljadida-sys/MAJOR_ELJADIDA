@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Eye, EyeOff, UserPlus, AlertCircle, CheckCircle, ScrollText, ChevronDown, ShieldCheck } from 'lucide-react'
+import { Eye, EyeOff, UserPlus, AlertCircle, CheckCircle, ScrollText, ChevronDown, ShieldCheck, Upload, Loader2, User as UserIcon, X } from 'lucide-react'
 import { TSHIRT_SIZE_LABELS, MEMBER_CATEGORY_LABELS } from '@/lib/utils'
 
 const SIZES  = Object.entries(TSHIRT_SIZE_LABELS)
@@ -107,9 +107,30 @@ export default function RegisterPage() {
   const [form, setForm] = useState({
     firstName: '', lastName: '', email: '', phone: '', password: '', confirmPassword: '',
     birthDate: '', cin: '', city: 'El Jadida', tshirtSize: 'M', category: 'SENIOR',
+    photo: '',
   })
+  const [photoUploading, setPhotoUploading] = useState(false)
 
   function set(k: string, v: string) { setForm(f => ({ ...f, [k]: v })) }
+
+  async function uploadPhoto(file: File) {
+    if (!file.type.startsWith('image/')) { setError('Sélectionne une image (JPG, PNG, WebP).'); return }
+    if (file.size > 5 * 1024 * 1024)     { setError('Photo trop lourde (max 5 MB).'); return }
+    setPhotoUploading(true)
+    setError('')
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res  = await fetch('/api/upload/avatar', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      set('photo', data.url)
+    } catch (err: any) {
+      setError(err.message ?? 'Erreur lors de l\'upload.')
+    } finally {
+      setPhotoUploading(false)
+    }
+  }
 
   async function handleSubmit() {
     if (!approved) { setError('Vous devez approuver la charte pour continuer.'); return }
@@ -280,6 +301,42 @@ export default function RegisterPage() {
         {step === 2 && (
           <div className="space-y-4">
             <h3 className="font-oswald text-white text-lg uppercase tracking-wide mb-4">Informations sportives</h3>
+
+            {/* Photo de profil */}
+            <div>
+              <label className="form-label">Photo de profil <span className="text-gray-500">(optionnel)</span></label>
+              <div className="flex items-center gap-4">
+                <div className="w-20 h-20 rounded-full bg-major-primary/10 border-2 border-major-primary/30 flex items-center justify-center overflow-hidden flex-shrink-0">
+                  {form.photo
+                    ? <img src={form.photo} alt="Photo" className="w-full h-full object-cover" />
+                    : <UserIcon size={32} className="text-major-primary/50" />}
+                </div>
+                <div className="flex-1 space-y-2">
+                  <label className={`flex items-center justify-center gap-2 px-3 py-2 border-2 border-dashed rounded-xl text-xs font-inter cursor-pointer transition-colors ${
+                    photoUploading
+                      ? 'border-major-cyan/40 text-major-cyan bg-major-cyan/5'
+                      : 'border-gray-700 text-gray-400 hover:border-major-primary hover:text-major-accent'
+                  }`}>
+                    {photoUploading
+                      ? <><Loader2 size={13} className="animate-spin" /> Upload…</>
+                      : <><Upload size={13} /> {form.photo ? 'Changer la photo' : 'Choisir une photo'}</>}
+                    <input type="file" accept="image/*" className="hidden" disabled={photoUploading}
+                      onChange={e => {
+                        const file = e.target.files?.[0]
+                        if (file) uploadPhoto(file)
+                        e.target.value = ''
+                      }} />
+                  </label>
+                  {form.photo && (
+                    <button type="button" onClick={() => set('photo', '')}
+                      className="flex items-center gap-1 text-xs text-red-400 hover:text-red-300">
+                      <X size={11} /> Retirer
+                    </button>
+                  )}
+                </div>
+              </div>
+              <p className="text-gray-500 text-[11px] font-inter mt-1.5">Photo visible par toi, le coach et l'admin. Max 5 MB.</p>
+            </div>
 
             <div>
               <label className="form-label">Catégorie</label>

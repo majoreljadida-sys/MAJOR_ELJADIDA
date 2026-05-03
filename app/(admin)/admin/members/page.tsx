@@ -85,8 +85,10 @@ export default async function AdminMembersPage({ searchParams }: Props) {
                 <tr key={m.id}>
                   <td>
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-major-primary/20 flex items-center justify-center text-major-accent text-xs font-semibold flex-shrink-0">
-                        {m.firstName?.[0]}{m.lastName?.[0]}
+                      <div className="w-9 h-9 rounded-full bg-major-primary/20 flex items-center justify-center text-major-accent text-xs font-semibold flex-shrink-0 overflow-hidden">
+                        {m.photo
+                          ? <img src={m.photo} alt={`${m.firstName} ${m.lastName}`} className="w-full h-full object-cover" />
+                          : <span>{m.firstName?.[0]}{m.lastName?.[0]}</span>}
                       </div>
                       <div>
                         <p className="text-white text-sm font-medium">{m.firstName} {m.lastName}</p>

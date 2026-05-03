@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import { useState, useEffect } from 'react'
-import { Save, User, MapPin, Shield, FileText, Upload } from 'lucide-react'
+import { Save, User, MapPin, Shield, FileText, Upload, Loader2, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { TSHIRT_SIZE_LABELS, MEMBER_CATEGORY_LABELS } from '@/lib/utils'
 
@@ -19,8 +19,9 @@ export default function MemberProfilePage() {
   const [form, setForm] = useState({
     firstName: '', lastName: '', phone: '', city: '', tshirtSize: 'M',
     category: 'SENIOR', emergencyContact: '', emergencyPhone: '', bio: '',
-    cin: '', dateOfBirth: '',
+    cin: '', dateOfBirth: '', photo: '',
   })
+  const [photoUploading, setPhotoUploading] = useState(false)
 
   useEffect(() => {
     if (!session?.user?.profileId) return
@@ -41,6 +42,7 @@ export default function MemberProfilePage() {
             bio: member.bio ?? '',
             cin: member.cin ?? '',
             dateOfBirth: member.dateOfBirth ? new Date(member.dateOfBirth).toISOString().split('T')[0] : '',
+            photo: member.photo ?? '',
           })
           if (member.medicalCertUrl) setCertUrl(member.medicalCertUrl)
           if (member.medicalCertExpiry) setCertExpiry(new Date(member.medicalCertExpiry).toISOString().split('T')[0])
@@ -49,6 +51,25 @@ export default function MemberProfilePage() {
   }, [session])
 
   function set(k: string, v: string) { setForm(f => ({ ...f, [k]: v })) }
+
+  async function uploadPhoto(file: File) {
+    if (!file.type.startsWith('image/')) return toast.error('Sélectionne une image (JPG, PNG, WebP).')
+    if (file.size > 5 * 1024 * 1024)     return toast.error('Photo trop lourde (max 5 MB).')
+    setPhotoUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res  = await fetch('/api/upload/avatar', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      set('photo', data.url)
+      toast.success('Photo mise à jour. N\'oublie pas d\'enregistrer.')
+    } catch (err: any) {
+      toast.error(err.message ?? 'Erreur upload.')
+    } finally {
+      setPhotoUploading(false)
+    }
+  }
 
   async function uploadCert() {
     if (!certFile || !certExpiry) return toast.error('Fichier et date d\'expiration requis')
@@ -93,6 +114,45 @@ export default function MemberProfilePage() {
       <h1 className="font-bebas text-4xl text-white tracking-widest mb-8">MON PROFIL</h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Photo de profil */}
+        <div className="card-dark">
+          <div className="flex items-center gap-2 mb-5">
+            <User size={18} className="text-major-accent" />
+            <h2 className="font-oswald text-white text-lg uppercase tracking-wide">Photo de profil</h2>
+          </div>
+          <div className="flex items-center gap-5">
+            <div className="w-24 h-24 rounded-full bg-major-primary/10 border-2 border-major-primary/30 flex items-center justify-center overflow-hidden flex-shrink-0">
+              {form.photo
+                ? <img src={form.photo} alt="Profil" className="w-full h-full object-cover" />
+                : <User size={36} className="text-major-primary/50" />}
+            </div>
+            <div className="flex-1 space-y-2">
+              <label className={`flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-dashed rounded-xl text-sm font-inter cursor-pointer transition-colors ${
+                photoUploading
+                  ? 'border-major-cyan/40 text-major-cyan bg-major-cyan/5'
+                  : 'border-gray-700 text-gray-400 hover:border-major-primary hover:text-major-accent'
+              }`}>
+                {photoUploading
+                  ? <><Loader2 size={14} className="animate-spin" /> Téléchargement…</>
+                  : <><Upload size={14} /> {form.photo ? 'Changer la photo' : 'Choisir une photo'}</>}
+                <input type="file" accept="image/*" className="hidden" disabled={photoUploading}
+                  onChange={e => {
+                    const file = e.target.files?.[0]
+                    if (file) uploadPhoto(file)
+                    e.target.value = ''
+                  }} />
+              </label>
+              {form.photo && (
+                <button type="button" onClick={() => set('photo', '')}
+                  className="flex items-center gap-1 text-xs text-red-400 hover:text-red-300">
+                  <X size={11} /> Retirer la photo
+                </button>
+              )}
+              <p className="text-gray-500 text-xs font-inter">Visible par toi, ton coach et l'admin du club. Max 5 MB.</p>
+            </div>
+          </div>
+        </div>
+
         {/* Personal info */}
         <div className="card-dark">
           <div className="flex items-center gap-2 mb-5">
