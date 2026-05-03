@@ -24,6 +24,8 @@ export function MemberSidebar() {
   const photo = session?.user?.image ?? null
   const [open, setOpen] = useState(false)
 
+  const initials = name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
+
   const sidebarContent = (
     <>
       <div className="p-5 border-b border-gray-800 flex items-center justify-between">
@@ -31,6 +33,17 @@ export function MemberSidebar() {
         <button onClick={() => setOpen(false)} className="lg:hidden text-gray-500 hover:text-white">
           <X size={20} />
         </button>
+      </div>
+
+      {/* Carte profil — visible sur toutes les pages */}
+      <div className="p-5 border-b border-gray-800 flex flex-col items-center text-center">
+        <div className="w-20 h-20 rounded-full bg-major-primary/15 border-2 border-major-primary/40 flex items-center justify-center text-major-accent text-2xl font-oswald font-bold overflow-hidden mb-3">
+          {photo
+            ? <img src={photo} alt={name} className="w-full h-full object-cover" />
+            : <span>{initials}</span>}
+        </div>
+        <p className="text-white text-sm font-inter font-semibold truncate w-full">{name}</p>
+        <p className="text-gray-500 text-[11px] font-inter uppercase tracking-widest mt-0.5">Membre</p>
       </div>
 
       <nav className="flex-1 overflow-y-auto p-3 space-y-1">
@@ -49,23 +62,10 @@ export function MemberSidebar() {
         })}
       </nav>
 
-      <div className="p-4 border-t border-gray-800">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-9 h-9 rounded-full bg-major-primary/20 flex items-center justify-center text-major-accent text-sm font-semibold flex-shrink-0 overflow-hidden">
-            {photo
-              ? <img src={photo} alt={name} className="w-full h-full object-cover" />
-              : <span>{name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()}</span>}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-white text-sm font-inter font-medium truncate">{name}</p>
-            <p className="text-gray-500 text-xs">Membre</p>
-          </div>
-        </div>
-        <div className="mb-2">
-          <ThemeToggle className="w-full justify-center" />
-        </div>
+      <div className="p-4 border-t border-gray-800 space-y-2">
+        <ThemeToggle className="w-full justify-center" />
         <button onClick={() => signOut({ callbackUrl: '/' })}
-          className="flex items-center gap-2 text-gray-500 hover:text-red-400 transition-colors text-xs font-inter w-full">
+          className="flex items-center justify-center gap-2 text-gray-500 hover:text-red-400 transition-colors text-xs font-inter w-full py-2">
           <LogOut size={14} /> Se déconnecter
         </button>
       </div>

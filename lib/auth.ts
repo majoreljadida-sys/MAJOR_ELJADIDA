@@ -49,11 +49,17 @@ export const authConfig: NextAuthConfig = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id        = user.id
         token.role      = (user as any).role
         token.profileId = (user as any).profileId
+      }
+      // Permet à useSession().update({ image, name }) de mettre à jour la photo / le nom
+      // sans avoir à se déconnecter (utilisé après un changement de profil).
+      if (trigger === 'update' && session) {
+        if (session.image !== undefined) token.picture = session.image
+        if (session.name  !== undefined) token.name    = session.name
       }
       return token
     },

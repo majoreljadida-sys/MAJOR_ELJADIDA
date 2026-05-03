@@ -10,7 +10,7 @@ const SIZES = Object.entries(TSHIRT_SIZE_LABELS)
 const CATS  = Object.entries(MEMBER_CATEGORY_LABELS)
 
 export default function MemberProfilePage() {
-  const { data: session } = useSession()
+  const { data: session, update: updateSession } = useSession()
   const [loading, setLoading] = useState(false)
   const [certFile, setCertFile]     = useState<File | null>(null)
   const [certExpiry, setCertExpiry] = useState('')
@@ -101,6 +101,9 @@ export default function MemberProfilePage() {
         body: JSON.stringify(form),
       })
       if (!res.ok) throw new Error()
+      // Rafraîchit la session pour que la sidebar récupère la nouvelle photo
+      // sans devoir se déconnecter / reconnecter.
+      await updateSession({ image: form.photo || null })
       toast.success('Profil mis à jour !')
     } catch {
       toast.error('Erreur lors de la mise à jour.')
