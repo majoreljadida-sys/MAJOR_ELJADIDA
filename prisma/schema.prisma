@@ -388,6 +388,25 @@ enum WhatsappNotificationType {
   CUSTOM
 }
 
+// Singleton — toujours une seule ligne avec id = "singleton"
+model ClubSettings {
+  id                String   @id @default("singleton")
+  clubName          String?
+  clubAddress       String?
+  clubLogo          String?
+  contactEmail      String?
+  contactPhone      String?
+  whatsappGroupLink String?
+  facebookUrl       String?
+  instagramUrl      String?
+  bankAccount       String?  // RIB / IBAN du club pour les paiements
+  bankName          String?
+  updatedAt         DateTime @updatedAt
+  createdAt         DateTime @default(now())
+
+  @@map("club_settings")
+}
+
 model WhatsappNotification {
   id        String                   @id @default(cuid())
   type      WhatsappNotificationType
