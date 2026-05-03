@@ -1,19 +1,26 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { Trash2, Loader2 } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 export function BlogDeleteButton({ postId, postTitle }: { postId: string; postTitle: string }) {
-  const router  = useRouter()
   const [loading, setLoading] = useState(false)
 
   async function handleDelete() {
     if (!confirm(`Supprimer l'article "${postTitle}" ? Cette action est irréversible.`)) return
     setLoading(true)
-    await fetch(`/api/blog/${postId}`, { method: 'DELETE' })
-    router.refresh()
-    setLoading(false)
+    try {
+      const res  = await fetch(`/api/blog/${postId}`, { method: 'DELETE' })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || `Erreur ${res.status}`)
+      toast.success('Article supprimé.')
+      // Reload complet pour invalider le cache de la liste
+      setTimeout(() => window.location.reload(), 400)
+    } catch (err: any) {
+      toast.error(err.message ?? 'Erreur lors de la suppression.')
+      setLoading(false)
+    }
   }
 
   return (
