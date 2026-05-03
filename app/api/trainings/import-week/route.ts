@@ -43,12 +43,12 @@ export async function POST(req: Request) {
     const existsKey = (title: string, date: Date) => `${title}|${date.toISOString().slice(0, 10)}`
     const existingKeys = new Set(existing.map(s => existsKey(s.title, s.date)))
 
-    let created = 0
+    const createdSessions: any[] = []
     let skipped = 0
     for (const ps of programSessions) {
       const key = existsKey(ps.title, ps.dateFrom)
       if (existingKeys.has(key)) { skipped++; continue }
-      await prisma.trainingSession.create({
+      const newSession = await prisma.trainingSession.create({
         data: {
           title:       ps.title,
           date:        ps.dateFrom,
@@ -58,13 +58,29 @@ export async function POST(req: Request) {
           status:      'SCHEDULED',
         },
       })
-      created++
+      createdSessions.push({
+        id:           newSession.id,
+        title:        newSession.title,
+        date:         newSession.date.toISOString(),
+        location:     newSession.location,
+        type:         newSession.type,
+        status:       newSession.status,
+        duration:     newSession.duration,
+        presentCount: null,
+        group:        null,
+        coach:        null,
+      })
     }
 
     revalidatePath('/coach/trainings')
     revalidatePath('/admin/trainings')
 
-    return NextResponse.json({ created, skipped, total: programSessions.length })
+    return NextResponse.json({
+      created: createdSessions.length,
+      sessions: createdSessions,
+      skipped,
+      total: programSessions.length,
+    })
   } catch (err) {
     console.error('[IMPORT WEEK]', err)
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 })

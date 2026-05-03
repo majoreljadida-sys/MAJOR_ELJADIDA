@@ -135,20 +135,19 @@ export function CoachTrainingsClient({
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
-      if (data.created > 0) {
+
+      if (data.created > 0 && Array.isArray(data.sessions)) {
+        // Merge des nouvelles séances dans la table sans rechargement
+        setSessions(prev => [...prev, ...data.sessions].sort((a, b) => +new Date(a.date) - +new Date(b.date)))
         toast.success(`${data.created} séance${data.created > 1 ? 's' : ''} importée${data.created > 1 ? 's' : ''}.${data.skipped ? ` (${data.skipped} déjà existante${data.skipped > 1 ? 's' : ''})` : ''}`)
-        // Rechargement complet pour rafraîchir la table avec les nouvelles séances.
-        // router.refresh() est moins fiable quand l'URL contient des query params.
-        setTimeout(() => window.location.reload(), 600)
       } else if (data.skipped > 0) {
         toast(`Toutes les séances de cette semaine sont déjà importées (${data.skipped}).`, { icon: 'ℹ️' })
-        setImporting(false)
       } else {
         toast(data.message || 'Rien à importer pour cette semaine.', { icon: 'ℹ️' })
-        setImporting(false)
       }
     } catch (err: any) {
       toast.error(err.message ?? 'Erreur.')
+    } finally {
       setImporting(false)
     }
   }
