@@ -346,7 +346,14 @@ export default function RegisterPage() {
 
             <div className="flex gap-3 pt-1">
               <button type="button" onClick={() => setStep(2)} className="btn-secondary flex-1 py-3 text-sm">← Retour</button>
-              <button type="button" onClick={() => { setError(''); setStep(4) }} className="btn-primary flex-1 py-3 text-sm">
+              <button type="button"
+                onClick={() => {
+                  if (!medicalAttestation)
+                    return setError('Vous devez cocher l\'attestation médicale pour continuer.')
+                  setError(''); setStep(4)
+                }}
+                disabled={!medicalAttestation}
+                className="btn-primary flex-1 py-3 text-sm disabled:opacity-40 disabled:cursor-not-allowed">
                 Continuer →
               </button>
             </div>
