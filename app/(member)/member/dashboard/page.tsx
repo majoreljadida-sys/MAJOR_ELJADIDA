@@ -51,13 +51,20 @@ export default async function MemberDashboardPage() {
   return (
     <div className="p-8">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="font-bebas text-4xl text-white tracking-widest">
-          BONJOUR, {member.firstName.toUpperCase()} !
-        </h1>
-        <p className="text-gray-400 font-inter text-sm mt-1">
-          Licence N° {member.licenseNumber} · {member.group?.name ?? 'Aucun groupe'}
-        </p>
+      <div className="mb-8 flex items-center gap-5">
+        <div className="w-20 h-20 rounded-full bg-major-primary/15 border-2 border-major-primary/40 flex items-center justify-center overflow-hidden flex-shrink-0">
+          {member.photo
+            ? <img src={member.photo} alt={`${member.firstName} ${member.lastName}`} className="w-full h-full object-cover" />
+            : <span className="font-oswald text-major-accent text-2xl font-bold">{member.firstName[0]}{member.lastName[0]}</span>}
+        </div>
+        <div>
+          <h1 className="font-bebas text-4xl text-white tracking-widest">
+            BONJOUR, {member.firstName.toUpperCase()} !
+          </h1>
+          <p className="text-gray-400 font-inter text-sm mt-1">
+            Licence N° {member.licenseNumber} · {member.group?.name ?? 'Aucun groupe'}
+          </p>
+        </div>
       </div>
 
       {/* Alert certificat manquant */}

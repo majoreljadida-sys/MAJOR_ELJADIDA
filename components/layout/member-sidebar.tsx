@@ -20,7 +20,8 @@ const NAV = [
 export function MemberSidebar() {
   const pathname = usePathname()
   const { data: session } = useSession()
-  const name = session?.user?.name ?? 'Membre'
+  const name  = session?.user?.name  ?? 'Membre'
+  const photo = session?.user?.image ?? null
   const [open, setOpen] = useState(false)
 
   const sidebarContent = (
@@ -50,8 +51,10 @@ export function MemberSidebar() {
 
       <div className="p-4 border-t border-gray-800">
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-9 h-9 rounded-full bg-major-primary/20 flex items-center justify-center text-major-accent text-sm font-semibold">
-            {name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()}
+          <div className="w-9 h-9 rounded-full bg-major-primary/20 flex items-center justify-center text-major-accent text-sm font-semibold flex-shrink-0 overflow-hidden">
+            {photo
+              ? <img src={photo} alt={name} className="w-full h-full object-cover" />
+              : <span>{name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()}</span>}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-white text-sm font-inter font-medium truncate">{name}</p>

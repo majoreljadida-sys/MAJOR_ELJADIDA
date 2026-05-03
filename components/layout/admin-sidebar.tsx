@@ -46,8 +46,9 @@ export function AdminSidebar({ variant = 'admin' }: SidebarProps) {
   const { data: session } = useSession()
   const [open, setOpen] = useState(false)
   const items = variant === 'coach' ? COACH_NAV : NAV_ITEMS
-  const role  = session?.user?.role ?? ''
-  const name  = session?.user?.name ?? ''
+  const role  = session?.user?.role  ?? ''
+  const name  = session?.user?.name  ?? ''
+  const photo = session?.user?.image ?? null
   const parts = name.split(' ')
 
   const inner = (
@@ -110,8 +111,10 @@ export function AdminSidebar({ variant = 'admin' }: SidebarProps) {
       {/* Profil utilisateur */}
       <div className="px-3 py-4 border-t border-major-primary/15">
         <div className="flex items-center gap-3 px-2 py-2 rounded-lg mb-2">
-          <div className="w-9 h-9 rounded-full bg-major-primary flex items-center justify-center text-white text-sm font-oswald font-bold flex-shrink-0">
-            {initials(parts[0] ?? 'U', parts[1] ?? '')}
+          <div className="w-9 h-9 rounded-full bg-major-primary flex items-center justify-center text-white text-sm font-oswald font-bold flex-shrink-0 overflow-hidden">
+            {photo
+              ? <img src={photo} alt={name} className="w-full h-full object-cover" />
+              : initials(parts[0] ?? 'U', parts[1] ?? '')}
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-white text-sm font-inter font-medium truncate">{name || 'Utilisateur'}</p>
