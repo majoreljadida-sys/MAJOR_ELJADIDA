@@ -35,7 +35,6 @@ const NAV_ITEMS: NavItem[] = [
 const COACH_NAV: NavItem[] = [
   { href: '/coach/dashboard',     icon: LayoutDashboard, label: 'Tableau de bord' },
   { href: '/coach/sessions',      icon: Activity,        label: 'Mes séances'     },
-  { href: '/coach/groups',        icon: Users,           label: 'Mes groupes'     },
   { href: '/coach/programs',      icon: Calendar,        label: 'Programmes'      },
   { href: '/coach/notifications', icon: Bell,            label: 'Notifications'   },
 ]
