@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Save, Trash2, Youtube, Users, Phone, Clock, X, CheckCircle2, Circle, Loader2, Download } from 'lucide-react'
+import { ArrowLeft, Save, Trash2, Youtube, Users, Phone, Clock, X, CheckCircle2, Circle, Loader2, Download, Search } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { extractYoutubeId } from '@/lib/youtube'
 import { formatDate } from '@/lib/utils'
@@ -45,6 +45,9 @@ export default function EditEventPage() {
   const [eventTitle,    setEventTitle]    = useState('')
   const [removingId,    setRemovingId]    = useState<string | null>(null)
   const [togglingPayId, setTogglingPayId] = useState<string | null>(null)
+  const [search,        setSearch]        = useState('')
+  const [statusFilter,  setStatusFilter]  = useState<'all' | 'CONFIRMED' | 'WAITING' | 'CANCELLED'>('all')
+  const [payFilter,     setPayFilter]     = useState<'all' | 'paid' | 'unpaid'>('all')
   const [form, setForm] = useState({
     title: '', type: 'RACE', date: '', location: '', description: '',
     maxParticipants: '', price: '', distance: '', status: 'UPCOMING', videoUrl: '',
@@ -325,12 +328,65 @@ export default function EditEventPage() {
           </p>
         ) : (
           <>
-            {/* Compteur paiements */}
-            <div className="mb-3 text-xs font-inter text-gray-400">
-              <span className="text-major-accent font-medium">
-                {registrations.filter(r => r.paidAt).length}
-              </span> paiement{registrations.filter(r => r.paidAt).length > 1 ? 's' : ''} validé{registrations.filter(r => r.paidAt).length > 1 ? 's' : ''} sur {registrations.length}
+            {/* Filtres + recherche */}
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-3 mb-4">
+              <div className="relative">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+                <input
+                  type="search"
+                  className="input-dark pl-9"
+                  placeholder="Rechercher par nom, prénom, CIN ou téléphone…"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                />
+              </div>
+              <select className="input-dark text-sm" value={statusFilter} onChange={e => setStatusFilter(e.target.value as any)}>
+                <option value="all">Tous les statuts</option>
+                <option value="CONFIRMED">✓ Confirmés</option>
+                <option value="WAITING">⏳ Liste d'attente</option>
+                <option value="CANCELLED">✗ Annulés</option>
+              </select>
+              <select className="input-dark text-sm" value={payFilter} onChange={e => setPayFilter(e.target.value as any)}>
+                <option value="all">Tous (paiement)</option>
+                <option value="paid">Payés</option>
+                <option value="unpaid">Non payés</option>
+              </select>
             </div>
+
+            {/* Compteur (filtré / total) + paiements */}
+            {(() => {
+              const q = search.trim().toLowerCase()
+              const filtered = registrations.filter(r => {
+                if (statusFilter !== 'all' && r.status !== statusFilter) return false
+                if (payFilter === 'paid'   && !r.paidAt) return false
+                if (payFilter === 'unpaid' &&  r.paidAt) return false
+                if (!q) return true
+                const hay = [
+                  r.member.firstName, r.member.lastName,
+                  r.member.cin ?? '', r.member.phone ?? '',
+                ].join(' ').toLowerCase()
+                return hay.includes(q)
+              })
+              const isFiltered = q || statusFilter !== 'all' || payFilter !== 'all'
+              const paidCount = registrations.filter(r => r.paidAt).length
+              return (
+                <>
+                  <div className="mb-3 text-xs font-inter text-gray-400 flex items-center gap-3 flex-wrap">
+                    <span>
+                      <span className="text-white font-medium">{filtered.length}</span>
+                      {isFiltered ? ` / ${registrations.length}` : ''} inscrit{filtered.length > 1 ? 's' : ''} affiché{filtered.length > 1 ? 's' : ''}
+                    </span>
+                    <span>·</span>
+                    <span>
+                      <span className="text-major-accent font-medium">{paidCount}</span> paiement{paidCount > 1 ? 's' : ''} validé{paidCount > 1 ? 's' : ''}
+                    </span>
+                    {isFiltered && (
+                      <button onClick={() => { setSearch(''); setStatusFilter('all'); setPayFilter('all') }}
+                        className="ml-auto text-major-cyan hover:text-major-accent flex items-center gap-1">
+                        <X size={11} /> Réinitialiser les filtres
+                      </button>
+                    )}
+                  </div>
             <div className="overflow-x-auto">
               <table className="table-dark">
                 <thead>
@@ -346,7 +402,14 @@ export default function EditEventPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {registrations.map(r => (
+                  {filtered.length === 0 && (
+                    <tr>
+                      <td colSpan={8} className="text-center py-8 text-gray-500 font-inter text-sm italic">
+                        Aucun inscrit ne correspond aux filtres.
+                      </td>
+                    </tr>
+                  )}
+                  {filtered.map(r => (
                     <tr key={r.id}>
                       <td className="text-white font-medium text-sm whitespace-nowrap">
                         <div>{r.member.lastName.toUpperCase()} {r.member.firstName}</div>
@@ -414,6 +477,9 @@ export default function EditEventPage() {
                 </tbody>
               </table>
             </div>
+                </>
+              )
+            })()}
           </>
         )}
       </div>
