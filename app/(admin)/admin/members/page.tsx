@@ -3,6 +3,7 @@ import { formatDate, getMemberStatusColor, MEMBER_STATUS_LABELS, MEMBER_CATEGORY
 import { FileCheck, FileX } from 'lucide-react'
 import Link from 'next/link'
 import { MemberActions } from './member-actions'
+import { MemberPhotoCell } from './member-photo-cell'
 
 interface Props { searchParams: { status?: string; search?: string } }
 
@@ -84,12 +85,13 @@ export default async function AdminMembersPage({ searchParams }: Props) {
               {members.map(m => (
                 <tr key={m.id}>
                   <td>
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-full bg-major-primary/20 flex items-center justify-center text-major-accent text-xs font-semibold flex-shrink-0 overflow-hidden">
-                        {m.photo
-                          ? <img src={m.photo} alt={`${m.firstName} ${m.lastName}`} className="w-full h-full object-cover" />
-                          : <span>{m.firstName?.[0]}{m.lastName?.[0]}</span>}
-                      </div>
+                    <div className="flex items-center gap-3">
+                      <MemberPhotoCell
+                        memberId={m.id}
+                        photo={m.photo}
+                        firstName={m.firstName}
+                        lastName={m.lastName}
+                      />
                       <div>
                         <p className="text-white text-sm font-medium">{m.firstName} {m.lastName}</p>
                         <p className="text-gray-500 text-xs">{m.user.email}</p>
