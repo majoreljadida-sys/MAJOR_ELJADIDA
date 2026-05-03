@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
@@ -27,6 +28,11 @@ export async function PATCH(req: Request, { params }: Params) {
   }
 
   const post = await (prisma.blogPost as any).update({ where: { id: params.id }, data })
+
+  revalidatePath('/admin/blog')
+  revalidatePath('/blog')
+  revalidatePath(`/blog/${post.slug}`)
+
   return NextResponse.json({ post })
 }
 
@@ -35,6 +41,11 @@ export async function DELETE(_req: Request, { params }: Params) {
   if (!session || session.user.role?.toLowerCase() !== 'admin')
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
-  await prisma.blogPost.delete({ where: { id: params.id } })
+  const post = await prisma.blogPost.delete({ where: { id: params.id } })
+
+  revalidatePath('/admin/blog')
+  revalidatePath('/blog')
+  revalidatePath(`/blog/${post.slug}`)
+
   return NextResponse.json({ success: true })
 }
