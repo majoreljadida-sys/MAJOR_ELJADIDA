@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
@@ -37,6 +38,10 @@ export async function POST(_req: Request, { params }: Ctx) {
 
     // Pas de Payment auto-créé : l'inscription est un engagement, le paiement
     // sera enregistré manuellement par l'admin quand le membre règlera.
+    revalidatePath('/admin/events')
+    revalidatePath(`/admin/events/${event.id}`)
+    revalidatePath('/events')
+
     return NextResponse.json({ registration, status: regStatus }, { status: 201 })
   } catch (err) {
     console.error('[EVENT REGISTER POST]', err)
@@ -60,6 +65,10 @@ export async function DELETE(_req: Request, { params }: Ctx) {
     if (!registration) return NextResponse.json({ error: 'Inscription introuvable.' }, { status: 404 })
 
     await prisma.eventRegistration.delete({ where: { id: registration.id } })
+
+    revalidatePath('/admin/events')
+    revalidatePath(`/admin/events/${params.id}`)
+    revalidatePath('/events')
 
     return NextResponse.json({ ok: true })
   } catch (err) {

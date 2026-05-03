@@ -84,6 +84,7 @@ export default function EditEventPage() {
       if (!res.ok) throw new Error(data.error)
       setRegistrations(rs => rs.filter(r => r.id !== reg.id))
       toast.success('Inscription retirée.')
+      router.refresh()
     } catch (err: any) {
       toast.error(err.message ?? 'Erreur.')
     } finally {

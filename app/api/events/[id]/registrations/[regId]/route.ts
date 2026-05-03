@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
@@ -26,6 +27,10 @@ export async function PATCH(req: Request, { params }: Ctx) {
       },
     })
 
+    revalidatePath('/admin/events')
+    revalidatePath(`/admin/events/${params.id}`)
+    revalidatePath('/events')
+
     return NextResponse.json({ registration: updated })
   } catch (err) {
     console.error('[ADMIN EVENT REG PATCH]', err)
@@ -45,6 +50,11 @@ export async function DELETE(_req: Request, { params }: Ctx) {
     if (reg.eventId !== params.id)  return NextResponse.json({ error: 'Inscription incohérente.' }, { status: 400 })
 
     await prisma.eventRegistration.delete({ where: { id: reg.id } })
+
+    revalidatePath('/admin/events')
+    revalidatePath(`/admin/events/${params.id}`)
+    revalidatePath('/events')
+
     return NextResponse.json({ ok: true })
   } catch (err) {
     console.error('[ADMIN EVENT REG DELETE]', err)
