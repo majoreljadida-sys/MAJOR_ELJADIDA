@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { AlertCircle, Eye, EyeOff, Youtube, Image as ImageIcon, Loader2, Save } from 'lucide-react'
+import { AlertCircle, Eye, EyeOff, Youtube, Image as ImageIcon, Loader2, Save, Upload, X } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 interface Category { id: string; name: string }
 interface BlogPost {
@@ -29,6 +30,7 @@ export function BlogForm({ post, categories }: Props) {
   const [loading, setLoading]   = useState(false)
   const [error,   setError]     = useState('')
   const [preview, setPreview]   = useState(false)
+  const [uploading, setUploading] = useState(false)
 
   const [title,      setTitle]      = useState(post?.title      ?? '')
   const [excerpt,    setExcerpt]    = useState(post?.excerpt    ?? '')
@@ -41,6 +43,26 @@ export function BlogForm({ post, categories }: Props) {
   const [published,  setPublished]  = useState(post?.published  ?? false)
 
   const youtubeId = youtubeUrl ? getYoutubeId(youtubeUrl) : null
+
+  async function uploadCover(file: File) {
+    if (!file.type.startsWith('image/')) return toast.error('Sélectionne une image (JPG, PNG, WebP, GIF).')
+    if (file.size > 8 * 1024 * 1024)     return toast.error('Image trop lourde (max 8 MB).')
+
+    setUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res  = await fetch('/api/upload/blog-image', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setCoverImage(data.url)
+      toast.success('Image téléchargée !')
+    } catch (err: any) {
+      toast.error(err.message ?? 'Erreur upload.')
+    } finally {
+      setUploading(false)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -231,15 +253,48 @@ export function BlogForm({ post, categories }: Props) {
                 <ImageIcon size={15} className="text-major-accent" />
                 <h3 className="text-white font-oswald uppercase tracking-wide text-sm">Image de couverture</h3>
               </div>
+
+              {/* Upload depuis le PC */}
+              <label className={`flex items-center justify-center gap-2 w-full px-4 py-3 border-2 border-dashed rounded-xl text-sm font-inter cursor-pointer transition-colors ${
+                uploading
+                  ? 'border-major-cyan/40 text-major-cyan bg-major-cyan/5'
+                  : 'border-gray-700 text-gray-400 hover:border-major-primary hover:text-major-accent'
+              }`}>
+                {uploading
+                  ? <><Loader2 size={15} className="animate-spin" /> Téléchargement…</>
+                  : <><Upload size={15} /> Choisir un fichier (JPG, PNG, WebP)</>}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploading}
+                  onChange={e => {
+                    const file = e.target.files?.[0]
+                    if (file) uploadCover(file)
+                    e.target.value = ''
+                  }}
+                />
+              </label>
+
+              <div className="text-center text-gray-600 text-xs font-inter">— ou —</div>
+
               <div>
-                <label className="form-label">URL de l'image</label>
-                <input className="input-dark" placeholder="https://... ou /uploads/..."
+                <label className="form-label">Coller une URL d'image</label>
+                <input className="input-dark" placeholder="https://..."
                   value={coverImage} onChange={e => setCoverImage(e.target.value)} />
               </div>
+
               {coverImage && (
-                <img src={coverImage} alt="Aperçu" className="w-full h-28 object-cover rounded-xl" />
+                <div className="relative">
+                  <img src={coverImage} alt="Aperçu" className="w-full h-28 object-cover rounded-xl" />
+                  <button type="button" onClick={() => setCoverImage('')}
+                    title="Retirer l'image"
+                    className="absolute top-2 right-2 p-1.5 bg-black/70 hover:bg-red-900/80 text-white rounded-lg transition-colors">
+                    <X size={13} />
+                  </button>
+                </div>
               )}
-              <p className="text-gray-600 text-xs font-inter">Ignorée si une vidéo YouTube est définie.</p>
+              <p className="text-gray-600 text-xs font-inter">Ignorée si une vidéo YouTube est définie. Max 8 MB.</p>
             </div>
 
           </div>
