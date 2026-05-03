@@ -99,6 +99,7 @@ export default function RegisterPage() {
   const [charterLang, setCharterLang] = useState<'fr' | 'ar'>('fr')
   const [charterRead, setCharterRead] = useState(false)
   const [approved, setApproved]       = useState(false)
+  const [checkingEmail, setCheckingEmail] = useState(false)
 
   // Aptitude médicale
   const [medicalAttestation, setMedicalAttestation] = useState(false)
@@ -236,7 +237,7 @@ export default function RegisterPage() {
                 value={form.confirmPassword} onChange={e => set('confirmPassword', e.target.value)} />
             </div>
 
-            <button type="button" onClick={() => {
+            <button type="button" onClick={async () => {
               const missing: string[] = []
               if (!form.firstName.trim()) missing.push('Prénom')
               if (!form.lastName.trim())  missing.push('Nom')
@@ -253,9 +254,24 @@ export default function RegisterPage() {
                 return setError('Le mot de passe doit comporter au moins 8 caractères.')
               if (form.cin.length < 4)
                 return setError('Le N° CIN saisi semble incorrect.')
-              setError(''); setStep(2)
-            }} className="btn-primary w-full py-3.5 font-inter text-sm font-semibold">
-              Continuer →
+
+              // Vérifier que l'email n'est pas déjà utilisé
+              setCheckingEmail(true)
+              setError('')
+              try {
+                const res  = await fetch(`/api/auth/check-email?email=${encodeURIComponent(form.email.trim())}`)
+                const data = await res.json()
+                if (!res.ok)         return setError(data.error ?? 'Erreur de vérification.')
+                if (!data.available) return setError('Cet email est déjà utilisé. Essaie de te connecter ou utilise une autre adresse.')
+                setError(''); setStep(2)
+              } catch {
+                setError('Impossible de vérifier l\'email. Vérifie ta connexion.')
+              } finally {
+                setCheckingEmail(false)
+              }
+            }} disabled={checkingEmail}
+              className="btn-primary w-full py-3.5 font-inter text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
+              {checkingEmail ? 'Vérification…' : 'Continuer →'}
             </button>
           </div>
         )}
