@@ -6,6 +6,7 @@ import {
   ArrowLeft, User as UserIcon, Mail, Phone, Calendar, MapPin, CreditCard as IdCardIcon,
   Shirt, Award, FileCheck, FileX, AlertTriangle, CreditCard, Trophy, Activity,
 } from 'lucide-react'
+import { PhotoLightbox } from './photo-lightbox'
 import {
   formatDate, formatCurrency, MEMBER_STATUS_LABELS, MEMBER_CATEGORY_LABELS,
   TSHIRT_SIZE_LABELS, getMemberStatusColor, getPaymentStatusColor, PAYMENT_STATUS_LABELS,
@@ -61,11 +62,11 @@ export default async function AdminMemberDetailPage({ params }: { params: { id: 
       {/* Header avec photo + nom */}
       <div className="card-dark mb-6">
         <div className="flex items-start gap-5 flex-wrap">
-          <div className="w-24 h-24 rounded-full bg-major-primary/15 border-2 border-major-primary/40 flex items-center justify-center overflow-hidden flex-shrink-0">
-            {member.photo
-              ? <img src={member.photo} alt={`${member.firstName} ${member.lastName}`} className="w-full h-full object-cover" />
-              : <span className="font-oswald text-major-accent text-3xl font-bold">{member.firstName[0]}{member.lastName[0]}</span>}
-          </div>
+          <PhotoLightbox
+            photo={member.photo}
+            name={`${member.firstName} ${member.lastName}`}
+            fallback={`${member.firstName[0]}${member.lastName[0]}`}
+          />
           <div className="flex-1 min-w-0">
             <h1 className="font-bebas text-4xl text-white tracking-widest">
               {member.firstName.toUpperCase()} {member.lastName.toUpperCase()}
