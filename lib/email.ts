@@ -51,7 +51,7 @@ function layout(title: string, body: string) {
             <p style="color:#d1d5db;font-size:11px;margin:0;">
               <a href="${BASE_URL}" style="color:#4ecca3;text-decoration:none;">clubmajor.ma</a>
               &nbsp;·&nbsp;
-              <a href="${BASE_URL}/login" style="color:#4ecca3;text-decoration:none;">Accéder à mon espace</a>
+              <a href="${BASE_URL}/login?invite=1" style="color:#4ecca3;text-decoration:none;">Accéder à mon espace</a>
             </p>
           </td>
         </tr>
@@ -110,7 +110,7 @@ export async function sendWelcomeEmail(to: string, firstName: string, licenseNum
         ⏳ Vous recevrez un email de confirmation dès que votre compte sera validé par l'équipe.
       </p>
     </div>
-    ${btn(`${BASE_URL}/login`, 'Accéder à mon espace')}
+    ${btn(`${BASE_URL}/login?invite=1&email=${encodeURIComponent(to)}`, 'Accéder à mon espace')}
   `)
   await sendMail(to, '✅ Inscription reçue — Club MAJOR', html)
 }
@@ -131,7 +131,7 @@ export async function sendValidationEmail(to: string, firstName: string, license
       Vous pouvez maintenant accéder à votre espace membre, consulter les programmes
       d'entraînement et vous inscrire aux événements.
     </p>
-    ${btn(`${BASE_URL}/member/dashboard`, 'Accéder à mon espace membre', '#2d8c6e')}
+    ${btn(`${BASE_URL}/login?invite=1&email=${encodeURIComponent(to)}`, 'Accéder à mon espace membre', '#2d8c6e')}
   `)
   await sendMail(to, '🎉 Compte validé — Bienvenue au Club MAJOR !', html)
 }

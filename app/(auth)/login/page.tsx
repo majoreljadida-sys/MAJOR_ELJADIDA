@@ -1,7 +1,7 @@
 'use client'
 
-import { Suspense, useState } from 'react'
-import { signIn } from 'next-auth/react'
+import { Suspense, useEffect, useState } from 'react'
+import { signIn, signOut, useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Eye, EyeOff, LogIn, AlertCircle } from 'lucide-react'
@@ -11,11 +11,24 @@ function LoginForm() {
   const searchParams = useSearchParams()
   const callbackUrl  = searchParams.get('callbackUrl') || '/member/dashboard'
   const errorParam   = searchParams.get('error')
+  const isInvite     = searchParams.get('invite') === '1'
+  const inviteEmail  = searchParams.get('email') || ''
+  const { data: session, status } = useSession()
 
-  const [form, setForm]       = useState({ email: '', password: '' })
+  const [form, setForm]       = useState({ email: inviteEmail, password: '' })
   const [showPw, setShowPw]   = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState(errorParam === 'CredentialsSignin' ? 'Email ou mot de passe incorrect.' : '')
+
+  // Si on arrive via un lien d'email d'invitation alors qu'une session existe déjà
+  // (ex. l'admin connecté sur le navigateur familial), on déconnecte immédiatement
+  // avant d'afficher le formulaire — sinon le destinataire hériterait de la session
+  // de l'admin et accéderait à son espace.
+  useEffect(() => {
+    if (isInvite && status === 'authenticated' && session) {
+      signOut({ redirect: false })
+    }
+  }, [isInvite, status, session])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -90,14 +103,6 @@ function LoginForm() {
             Adhérer au club
           </Link>
         </p>
-      </div>
-
-      {/* Demo credentials */}
-      <div className="mt-6 p-4 bg-major-surface/50 border border-gray-800 rounded-xl text-xs font-inter text-gray-500 space-y-1">
-        <p className="font-semibold text-gray-400 mb-2">Comptes de démonstration :</p>
-        <p>Admin : <span className="text-gray-300">admin@clubmajor.ma</span> / <span className="text-gray-300">Admin@Major2025</span></p>
-        <p>Coach : <span className="text-gray-300">youssef.coach@clubmajor.ma</span> / <span className="text-gray-300">Coach@2025</span></p>
-        <p>Membre : <span className="text-gray-300">mohammed.alami@email.com</span> / <span className="text-gray-300">Member@2025</span></p>
       </div>
     </div>
   )

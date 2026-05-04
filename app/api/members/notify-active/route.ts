@@ -73,7 +73,7 @@ export async function POST(req: Request) {
 
               <!-- CTA -->
               <div style="text-align:center;margin-bottom:28px;">
-                <a href="https://major-eljadida.vercel.app/member/dashboard"
+                <a href="https://major-eljadida.vercel.app/login?invite=1&email=${encodeURIComponent(email)}"
                   style="display:inline-block;background:#2D8C6E;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:600;font-size:15px;letter-spacing:1px;">
                   ACCÉDER À MON ESPACE →
                 </a>
