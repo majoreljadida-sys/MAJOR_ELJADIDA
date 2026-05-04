@@ -4,6 +4,7 @@ import { FileCheck, FileX } from 'lucide-react'
 import Link from 'next/link'
 import { MemberActions } from './member-actions'
 import { MemberPhotoCell } from './member-photo-cell'
+import { ExportMembersButton } from './export-button'
 
 interface Props { searchParams: { status?: string; search?: string } }
 
@@ -32,13 +33,32 @@ export default async function AdminMembersPage({ searchParams }: Props) {
 
   return (
     <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
         <div>
           <h1 className="font-bebas text-4xl text-white tracking-widest">GESTION DES MEMBRES</h1>
           <p className="text-gray-400 font-inter text-sm mt-1">
             {members.length} membre{members.length > 1 ? 's' : ''} trouvé{members.length > 1 ? 's' : ''}
           </p>
         </div>
+        <ExportMembersButton
+          statusFilter={status}
+          members={members.map(m => ({
+            firstName:     m.firstName,
+            lastName:      m.lastName,
+            cin:           m.cin,
+            dateOfBirth:   m.dateOfBirth?.toISOString() ?? null,
+            tshirtSize:    m.tshirtSize,
+            phone:         m.phone,
+            email:         m.user.email,
+            category:      m.category,
+            group:         m.group?.name ?? null,
+            status:        m.status,
+            licenseNumber: m.licenseNumber,
+            certUrl:       m.medicalCertUrl,
+            certExpiry:    m.medicalCertExpiry?.toISOString() ?? null,
+            createdAt:     m.createdAt.toISOString(),
+          }))}
+        />
       </div>
 
       {/* Filtres par statut */}
