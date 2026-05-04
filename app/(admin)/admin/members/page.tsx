@@ -112,10 +112,12 @@ export default async function AdminMembersPage({ searchParams }: Props) {
                         firstName={m.firstName}
                         lastName={m.lastName}
                       />
-                      <div>
-                        <p className="text-white text-sm font-medium">{m.firstName} {m.lastName}</p>
+                      <Link href={`/admin/members/${m.id}`} className="block group">
+                        <p className="text-white text-sm font-medium group-hover:text-major-accent transition-colors">
+                          {m.firstName} {m.lastName}
+                        </p>
                         <p className="text-gray-500 text-xs">{m.user.email}</p>
-                      </div>
+                      </Link>
                     </div>
                   </td>
                   <td className="text-gray-400 text-xs font-mono">{m.licenseNumber ?? '—'}</td>
