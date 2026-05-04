@@ -5,8 +5,24 @@ import { PrismaClient, Role, MemberStatus, MemberCategory,
   TshirtSize, TrainingType, EventType, PaymentType,
   PaymentStatus, Priority } from '@prisma/client'
 import bcrypt from 'bcryptjs'
+import crypto from 'crypto'
 
 const prisma = new PrismaClient()
+
+// Mots de passe seed lus depuis l'environnement (jamais hardcodés).
+// Si non fournis, on génère un mot de passe aléatoire et on l'affiche
+// une seule fois à la fin du seed — il faut le noter immédiatement.
+function envOrRandom(envKey: string): { value: string; generated: boolean } {
+  const fromEnv = process.env[envKey]
+  if (fromEnv && fromEnv.length >= 8) return { value: fromEnv, generated: false }
+  // 16 chars aléatoires (alphanumériques + ponctuation simple)
+  const value = crypto.randomBytes(12).toString('base64').replace(/[+/=]/g, '').slice(0, 16) + '!1Aa'
+  return { value, generated: true }
+}
+
+const SEED_ADMIN_PW  = envOrRandom('SEED_ADMIN_PASSWORD')
+const SEED_COACH_PW  = envOrRandom('SEED_COACH_PASSWORD')
+const SEED_MEMBER_PW = envOrRandom('SEED_MEMBER_PASSWORD')
 
 async function main() {
   console.log('🌱  Initialisation du seed Club MAJOR...')
@@ -32,7 +48,7 @@ async function main() {
   const adminUser = await prisma.user.create({
     data: {
       email: 'admin@clubmajor.ma',
-      password: await bcrypt.hash('Admin@Major2025', 12),
+      password: await bcrypt.hash(SEED_ADMIN_PW.value, 12),
       role: Role.ADMIN,
     },
   })
@@ -40,14 +56,14 @@ async function main() {
   const coachUser1 = await prisma.user.create({
     data: {
       email: 'youssef.coach@clubmajor.ma',
-      password: await bcrypt.hash('Coach@2025', 12),
+      password: await bcrypt.hash(SEED_COACH_PW.value, 12),
       role: Role.COACH,
     },
   })
   const coachUser2 = await prisma.user.create({
     data: {
       email: 'fatima.coach@clubmajor.ma',
-      password: await bcrypt.hash('Coach@2025', 12),
+      password: await bcrypt.hash(SEED_COACH_PW.value, 12),
       role: Role.COACH,
     },
   })
@@ -69,7 +85,7 @@ async function main() {
       prisma.user.create({
         data: {
           email,
-          password: bcrypt.hashSync('Member@2025', 12),
+          password: bcrypt.hashSync(SEED_MEMBER_PW.value, 12),
           role: Role.MEMBER,
         },
       })
@@ -934,9 +950,22 @@ On court ensemble, on se motive, on rigole, on partage — et on finit la sortie
 
   console.log('\n🎉  Seed terminé avec succès !')
   console.log('\n📧  Comptes de connexion :')
-  console.log('   Admin  : admin@clubmajor.ma / Admin@Major2025')
-  console.log('   Coach  : youssef.coach@clubmajor.ma / Coach@2025')
-  console.log('   Membre : mohammed.alami@email.ma / Member@2025')
+
+  const generated = [SEED_ADMIN_PW, SEED_COACH_PW, SEED_MEMBER_PW].some(p => p.generated)
+  if (generated) {
+    console.log('\n⚠  Mot(s) de passe généré(s) automatiquement — NOTEZ-LES MAINTENANT :')
+    console.log('   Admin  : admin@clubmajor.ma            / ' + SEED_ADMIN_PW.value
+                + (SEED_ADMIN_PW.generated  ? '  (généré)' : '  (env)'))
+    console.log('   Coach  : youssef.coach@clubmajor.ma    / ' + SEED_COACH_PW.value
+                + (SEED_COACH_PW.generated  ? '  (généré)' : '  (env)'))
+    console.log('   Membre : mohammed.alami@email.ma       / ' + SEED_MEMBER_PW.value
+                + (SEED_MEMBER_PW.generated ? '  (généré)' : '  (env)'))
+    console.log('\n   Pour fixer ces mots de passe à l\'avenir, définissez les variables')
+    console.log('   d\'env SEED_ADMIN_PASSWORD, SEED_COACH_PASSWORD, SEED_MEMBER_PASSWORD')
+    console.log('   avant de lancer le seed (ne PAS les committer dans le repo).')
+  } else {
+    console.log('   Identifiants définis via les variables d\'environnement SEED_*_PASSWORD.')
+  }
 }
 
 main()

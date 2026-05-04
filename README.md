@@ -57,11 +57,9 @@ NEXTAUTH_URL="http://localhost:3000"
 
 ## Comptes de démonstration
 
-| Rôle | Email | Mot de passe |
-|------|-------|--------------|
-| Admin | admin@clubmajor.ma | Admin@Major2025 |
-| Coach | youssef.coach@clubmajor.ma | Coach@2025 |
-| Membre | mohammed.alami@email.com | Member@2025 |
+Les identifiants des comptes seedés ne sont pas publiés ici. Récupérez-les
+auprès de l'administrateur du club, ou regénérez-les via le script interne
+de réinitialisation.
 
 ## Arborescence
 
