@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Instagram, Facebook, Youtube, MapPin, Phone, Mail } from 'lucide-react'
+import { Instagram, Facebook, MapPin, Phone, Mail } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n/context'
 
 export function PublicFooter() {
@@ -37,11 +37,10 @@ export function PublicFooter() {
             </p>
             <div className="flex gap-3">
               {[
-                { Icon: Instagram, label: 'Instagram' },
-                { Icon: Facebook,  label: 'Facebook'  },
-                { Icon: Youtube,   label: 'Youtube'   },
-              ].map(({ Icon, label }) => (
-                <a key={label} href="#" aria-label={label}
+                { Icon: Instagram, label: 'Instagram', href: 'https://www.instagram.com/major_running_club' },
+                { Icon: Facebook,  label: 'Facebook',  href: 'https://www.facebook.com/share/1aKcyRb9yd/'   },
+              ].map(({ Icon, label, href }) => (
+                <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={`Club MAJOR sur ${label}`}
                   className="w-9 h-9 rounded-lg bg-major-surface border border-major-primary/20 flex items-center justify-center text-gray-500 hover:text-major-accent hover:border-major-accent/40 transition-all">
                   <Icon size={16} />
                 </a>
