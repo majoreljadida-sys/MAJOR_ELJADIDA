@@ -3,11 +3,11 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Eye, EyeOff, UserPlus, AlertCircle, CheckCircle, ScrollText, ChevronDown, ShieldCheck, Upload, Loader2, User as UserIcon, X } from 'lucide-react'
-import { TSHIRT_SIZE_LABELS, MEMBER_CATEGORY_LABELS } from '@/lib/utils'
+import { TSHIRT_SIZE_LABELS } from '@/lib/utils'
 import { SPORT_LEVELS, type SportLevelKey } from '@/lib/sport-levels'
+import { MOTIVATIONS, type MotivationKey } from '@/lib/motivations'
 
 const SIZES  = Object.entries(TSHIRT_SIZE_LABELS)
-const CATS   = Object.entries(MEMBER_CATEGORY_LABELS)
 const CITIES = ['El Jadida', 'Casablanca', 'Rabat', 'Marrakech', 'Agadir', 'Fès', 'Autre']
 
 const CHARTER_FR = [
@@ -107,9 +107,10 @@ export default function RegisterPage() {
 
   const [form, setForm] = useState({
     firstName: '', lastName: '', email: '', phone: '', password: '', confirmPassword: '',
-    birthDate: '', cin: '', city: 'El Jadida', tshirtSize: 'M', category: 'SENIOR',
+    birthDate: '', cin: '', city: 'El Jadida', tshirtSize: 'M',
     photo: '',
     sportLevel: '' as '' | SportLevelKey,
+    motivation: '' as '' | MotivationKey,
   })
   const [photoUploading, setPhotoUploading] = useState(false)
 
@@ -136,6 +137,7 @@ export default function RegisterPage() {
 
   async function handleSubmit() {
     if (!approved) { setError('Vous devez approuver la charte pour continuer.'); return }
+    if (!form.motivation) { setError('Veuillez choisir votre objectif personnel (étape 2).'); setStep(2); return }
     if (!form.sportLevel) { setError('Veuillez choisir votre niveau sportif (étape 2).'); setStep(2); return }
     setLoading(true)
     setError('')
@@ -341,11 +343,43 @@ export default function RegisterPage() {
               <p className="text-gray-500 text-[11px] font-inter mt-1.5">Photo visible par toi, le coach et l'admin. Max 5 MB.</p>
             </div>
 
+            {/* ── Objectif personnel / motivation (obligatoire) ── */}
             <div>
-              <label className="form-label">Catégorie</label>
-              <select className="input-dark" value={form.category} onChange={e => set('category', e.target.value)}>
-                {CATS.map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-              </select>
+              <label className="form-label">
+                Objectif personnel <span className="text-red-400">*</span>
+              </label>
+              <p className="text-gray-500 text-[11px] font-inter mb-2.5">
+                Qu'est-ce qui vous motive à courir ? Cela nous aide à orienter votre coaching.
+              </p>
+              <div className="space-y-2">
+                {MOTIVATIONS.map(def => {
+                  const active = form.motivation === def.key
+                  return (
+                    <button
+                      key={def.key}
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, motivation: def.key }))}
+                      className={`w-full text-left rounded-xl border p-3 transition-all ${
+                        active
+                          ? `${def.cardBg} ${def.cardBorder} ring-2 ${def.ring}`
+                          : 'bg-major-black/30 border-gray-700 hover:border-gray-500'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <span className="text-xl flex-shrink-0">{def.emoji}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className={`font-oswald text-sm uppercase tracking-wider ${active ? def.chipText : 'text-white'}`}>
+                            {def.label}
+                          </p>
+                          <p className="text-gray-300 font-inter text-xs leading-relaxed mt-0.5">{def.description}</p>
+                          <p className="text-gray-400 font-inter text-[11px] mt-1 italic">{def.detail}</p>
+                        </div>
+                        {active && <CheckCircle size={18} className={`flex-shrink-0 ${def.chipText}`} />}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
 
             <div>
@@ -408,6 +442,7 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={() => {
+                  if (!form.motivation) { setError('Veuillez choisir votre objectif personnel.'); return }
                   if (!form.sportLevel) { setError('Veuillez choisir votre niveau sportif.'); return }
                   setError(''); setStep(3)
                 }}

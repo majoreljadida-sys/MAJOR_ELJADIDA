@@ -4,15 +4,16 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import {
   ArrowLeft, User as UserIcon, Mail, Phone, Calendar, MapPin, CreditCard as IdCardIcon,
-  Shirt, Award, FileCheck, FileX, AlertTriangle, CreditCard, Trophy, Activity,
+  Shirt, FileCheck, FileX, AlertTriangle, CreditCard, Trophy, Activity, Target,
 } from 'lucide-react'
 import { PhotoLightbox } from './photo-lightbox'
 import {
-  formatDate, formatCurrency, MEMBER_STATUS_LABELS, MEMBER_CATEGORY_LABELS,
+  formatDate, formatCurrency, MEMBER_STATUS_LABELS,
   TSHIRT_SIZE_LABELS, getMemberStatusColor, getPaymentStatusColor, PAYMENT_STATUS_LABELS,
   PAYMENT_TYPE_LABELS, EVENT_TYPE_LABELS,
 } from '@/lib/utils'
 import { getLevel } from '@/lib/sport-levels'
+import { getMotivation } from '@/lib/motivations'
 
 export const dynamic = 'force-dynamic'
 
@@ -89,6 +90,14 @@ export default async function AdminMemberDetailPage({ params }: { params: { id: 
                   <span className="text-xs text-gray-500 italic font-inter">Niveau non renseigné</span>
                 )
               })()}
+              {(() => {
+                const mot = getMotivation(member.motivation)
+                return mot ? (
+                  <span className={`inline-flex items-center gap-1 ${mot.chipBg} ${mot.chipText} border ${mot.chipBorder} text-xs font-inter font-semibold px-2 py-1 rounded`}>
+                    <span>{mot.emoji}</span> {mot.label.toUpperCase()}
+                  </span>
+                ) : null
+              })()}
               {member.user.coach && (
                 <span className="badge text-xs text-major-cyan bg-major-cyan/10 border-major-cyan/30">
                   COACH{member.user.coach.specialty ? ` · ${member.user.coach.specialty}` : ''}
@@ -121,7 +130,7 @@ export default async function AdminMemberDetailPage({ params }: { params: { id: 
           <Field icon={Phone}    label="Téléphone"         value={member.phone} />
           <Field icon={MapPin}   label="Lieu / Ville"      value={member.placeOfBirth} />
           <Field icon={Shirt}    label="Taille T-shirt"    value={member.tshirtSize ? TSHIRT_SIZE_LABELS[member.tshirtSize] : null} />
-          <Field icon={Award}    label="Catégorie"         value={member.category ? MEMBER_CATEGORY_LABELS[member.category] : null} />
+          <Field icon={Target}   label="Objectif"          value={getMotivation(member.motivation)?.label ?? null} missing="à compléter" />
           <Field icon={IdCardIcon}   label="N° Licence"        value={member.licenseNumber} mono />
           <Field icon={Activity} label="Niveau sportif"    value={getLevel(member.sportLevel)?.label ?? null} missing="à compléter" />
           <Field icon={UserIcon} label="Groupe"            value={member.group?.name ?? null} />

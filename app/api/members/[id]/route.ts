@@ -63,7 +63,7 @@ export async function PATCH(req: Request, { params }: Params) {
     firstName, lastName, phone,
     city, tshirtSize, category,
     cin, dateOfBirth, photo,
-    sportLevel,
+    sportLevel, motivation,
     memberStatus, // admin-only field
   } = body
 
@@ -72,6 +72,12 @@ export async function PATCH(req: Request, { params }: Params) {
     const VALID = ['DEBUTANT', 'INTERMEDIAIRE', 'CONFIRME', 'COMPETITEUR']
     if (!VALID.includes(sportLevel))
       return NextResponse.json({ error: 'Niveau sportif invalide.' }, { status: 400 })
+  }
+  // Validation de l'objectif personnel
+  if (motivation !== undefined && motivation !== null && motivation !== '') {
+    const VALID = ['HEALTH', 'WEIGHT_LOSS', 'PERFORMANCE', 'RACE_PREP']
+    if (!VALID.includes(motivation))
+      return NextResponse.json({ error: 'Objectif invalide.' }, { status: 400 })
   }
 
   try {
@@ -87,6 +93,7 @@ export async function PATCH(req: Request, { params }: Params) {
     if (dateOfBirth       !== undefined) memberData.dateOfBirth       = dateOfBirth ? new Date(dateOfBirth) : null
     if (photo             !== undefined) memberData.photo             = photo || null
     if (sportLevel        !== undefined) memberData.sportLevel        = sportLevel || null
+    if (motivation        !== undefined) memberData.motivation        = motivation || null
     if (isAdmin && memberStatus !== undefined) memberData.status      = memberStatus
 
     // Lire le statut actuel avant mise à jour (pour détecter la transition → ACTIVE)

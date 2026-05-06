@@ -1,21 +1,23 @@
 import { prisma } from '@/lib/prisma'
-import { formatDate, getMemberStatusColor, MEMBER_STATUS_LABELS, MEMBER_CATEGORY_LABELS } from '@/lib/utils'
+import { formatDate, getMemberStatusColor, MEMBER_STATUS_LABELS } from '@/lib/utils'
 import { FileCheck, FileX } from 'lucide-react'
 import Link from 'next/link'
 import { MemberActions } from './member-actions'
 import { MemberPhotoCell } from './member-photo-cell'
 import { ExportMembersButton } from './export-button'
 import { getLevel, SPORT_LEVELS } from '@/lib/sport-levels'
+import { getMotivation, MOTIVATIONS } from '@/lib/motivations'
 
-interface Props { searchParams: { status?: string; search?: string; level?: string } }
+interface Props { searchParams: { status?: string; search?: string; level?: string; goal?: string } }
 
 export default async function AdminMembersPage({ searchParams }: Props) {
-  const { status, search, level } = searchParams
+  const { status, search, level, goal } = searchParams
 
   const members = await prisma.member.findMany({
     where: {
       ...(status ? { status: status as any } : {}),
       ...(level  ? { sportLevel: level as any } : {}),
+      ...(goal   ? { motivation: goal as any } : {}),
       ...(search ? {
         OR: [
           { firstName: { contains: search, mode: 'insensitive' } },
@@ -70,6 +72,7 @@ export default async function AdminMembersPage({ searchParams }: Props) {
           const params = new URLSearchParams()
           if (s)     params.set('status', s)
           if (level) params.set('level',  level)
+          if (goal)  params.set('goal',   goal)
           return (
             <Link key={s || 'all'} href={params.toString() ? `/admin/members?${params}` : '/admin/members'}
               className={`px-4 py-2 rounded-xl text-sm font-inter border transition-colors ${
@@ -84,12 +87,13 @@ export default async function AdminMembersPage({ searchParams }: Props) {
       </div>
 
       {/* Filtres par niveau sportif */}
-      <div className="flex flex-wrap gap-2 mb-6">
+      <div className="flex flex-wrap gap-2 mb-2">
         {[null, ...SPORT_LEVELS.map(l => l.key)].map(k => {
           const def    = k ? SPORT_LEVELS.find(l => l.key === k)! : null
           const params = new URLSearchParams()
           if (status) params.set('status', status)
           if (k)      params.set('level',  k)
+          if (goal)   params.set('goal',   goal)
           const active = (level ?? null) === (k ?? null)
           return (
             <Link key={k ?? 'all-levels'}
@@ -107,6 +111,31 @@ export default async function AdminMembersPage({ searchParams }: Props) {
         })}
       </div>
 
+      {/* Filtres par objectif */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {[null, ...MOTIVATIONS.map(m => m.key)].map(k => {
+          const def    = k ? MOTIVATIONS.find(m => m.key === k)! : null
+          const params = new URLSearchParams()
+          if (status) params.set('status', status)
+          if (level)  params.set('level',  level)
+          if (k)      params.set('goal',   k)
+          const active = (goal ?? null) === (k ?? null)
+          return (
+            <Link key={k ?? 'all-goals'}
+              href={params.toString() ? `/admin/members?${params}` : '/admin/members'}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-inter border transition-colors ${
+                active
+                  ? def
+                    ? `${def.cardBg} ${def.cardBorder} ${def.chipText} font-semibold`
+                    : 'bg-major-primary/20 border-major-primary text-major-accent font-semibold'
+                  : 'border-gray-800 text-gray-500 hover:border-gray-600 hover:text-white'
+              }`}>
+              {def ? <><span>{def.emoji}</span> {def.label}</> : 'Tous objectifs'}
+            </Link>
+          )
+        })}
+      </div>
+
       {/* Tableau */}
       <div className="card-dark overflow-hidden p-0">
         <div className="overflow-x-auto">
@@ -116,7 +145,7 @@ export default async function AdminMembersPage({ searchParams }: Props) {
                 <th>Membre</th>
                 <th>Licence</th>
                 <th>Niveau</th>
-                <th>Catégorie</th>
+                <th>Objectif</th>
                 <th>Groupe</th>
                 <th>Certificat</th>
                 <th>Statut</th>
@@ -163,7 +192,18 @@ export default async function AdminMembersPage({ searchParams }: Props) {
                       )
                     })()}
                   </td>
-                  <td className="text-gray-400 text-sm">{m.category ? MEMBER_CATEGORY_LABELS[m.category] : '—'}</td>
+                  <td>
+                    {(() => {
+                      const mot = getMotivation(m.motivation)
+                      return mot ? (
+                        <span className={`inline-flex items-center gap-1 ${mot.chipBg} ${mot.chipText} text-xs font-inter font-semibold px-1.5 py-0.5 rounded`} title={mot.label}>
+                          <span>{mot.emoji}</span> {mot.short}
+                        </span>
+                      ) : (
+                        <span className="text-gray-600 text-xs italic">—</span>
+                      )
+                    })()}
+                  </td>
                   <td className="text-gray-400 text-sm">{m.group?.name ?? '—'}</td>
                   <td>
                     {m.medicalCertUrl

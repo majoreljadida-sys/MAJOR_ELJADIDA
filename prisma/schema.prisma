@@ -146,6 +146,9 @@ model Member {
   // créés avant le déploiement de cette feature ; obligatoire dans le
   // formulaire d'inscription pour tous les nouveaux membres.
   sportLevel     SportLevel?
+  // Objectif personnel / motivation du coureur (cf. enum MotivationGoal).
+  // Remplace l'usage de `category` dans les formulaires utilisateur.
+  motivation     MotivationGoal?
   licenseNumber  String?             @unique
   groupId        String?
   group          TrainingGroup?      @relation(fields: [groupId], references: [id])
@@ -163,6 +166,13 @@ enum SportLevel {
   INTERMEDIAIRE  // 2-3×/sem, endurance + chrono 5/10K
   CONFIRME       // Compétition régulière, 10K / semi-marathon
   COMPETITEUR    // VMA, seuil, podium, chrono précis
+}
+
+enum MotivationGoal {
+  HEALTH        // Santé & bien-être
+  WEIGHT_LOSS   // Perte de poids
+  PERFORMANCE   // Performance / chrono
+  RACE_PREP     // Préparation course (10 km, semi, marathon)
 }
 
 model Coach {

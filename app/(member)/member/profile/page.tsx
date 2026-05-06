@@ -2,13 +2,13 @@
 
 import { useSession } from 'next-auth/react'
 import { useState, useEffect } from 'react'
-import { Save, User, MapPin, Shield, FileText, Upload, Loader2, X, CheckCircle, Activity } from 'lucide-react'
+import { Save, User, MapPin, Shield, FileText, Upload, Loader2, X, CheckCircle, Activity, Target } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { TSHIRT_SIZE_LABELS, MEMBER_CATEGORY_LABELS } from '@/lib/utils'
+import { TSHIRT_SIZE_LABELS } from '@/lib/utils'
 import { SPORT_LEVELS, type SportLevelKey } from '@/lib/sport-levels'
+import { MOTIVATIONS, type MotivationKey } from '@/lib/motivations'
 
 const SIZES = Object.entries(TSHIRT_SIZE_LABELS)
-const CATS  = Object.entries(MEMBER_CATEGORY_LABELS)
 
 export default function MemberProfilePage() {
   const { data: session, update: updateSession } = useSession()
@@ -19,9 +19,10 @@ export default function MemberProfilePage() {
   const [certUrl, setCertUrl]       = useState<string | null>(null)
   const [form, setForm] = useState({
     firstName: '', lastName: '', phone: '', city: '', tshirtSize: 'M',
-    category: 'SENIOR', emergencyContact: '', emergencyPhone: '', bio: '',
+    emergencyContact: '', emergencyPhone: '', bio: '',
     cin: '', dateOfBirth: '', photo: '',
     sportLevel: '' as '' | SportLevelKey,
+    motivation: '' as '' | MotivationKey,
   })
   const [photoUploading, setPhotoUploading] = useState(false)
 
@@ -38,7 +39,6 @@ export default function MemberProfilePage() {
             phone:     member.phone           ?? '',
             city:      member.placeOfBirth    ?? '',
             tshirtSize: member.tshirtSize     ?? 'M',
-            category:  member.category        ?? 'SENIOR',
             emergencyContact: member.emergencyContact ?? '',
             emergencyPhone:   member.emergencyPhone   ?? '',
             bio: member.bio ?? '',
@@ -46,6 +46,7 @@ export default function MemberProfilePage() {
             dateOfBirth: member.dateOfBirth ? new Date(member.dateOfBirth).toISOString().split('T')[0] : '',
             photo: member.photo ?? '',
             sportLevel: member.sportLevel ?? '',
+            motivation: member.motivation ?? '',
           })
           if (member.medicalCertUrl) setCertUrl(member.medicalCertUrl)
           if (member.medicalCertExpiry) setCertExpiry(new Date(member.medicalCertExpiry).toISOString().split('T')[0])
@@ -208,11 +209,43 @@ export default function MemberProfilePage() {
             <h2 className="font-oswald text-white text-lg uppercase tracking-wide">Informations sportives</h2>
           </div>
 
+          {/* Objectif personnel / motivation */}
           <div className="mb-4">
-            <label className="form-label">Catégorie</label>
-            <select className="input-dark" value={form.category} onChange={e => set('category', e.target.value)}>
-              {CATS.map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-            </select>
+            <label className="form-label flex items-center gap-1.5">
+              <Target size={13} /> Objectif personnel
+            </label>
+            <p className="text-gray-500 text-[11px] font-inter mb-2.5">
+              Qu'est-ce qui vous motive à courir ? Vous pouvez le mettre à jour si votre projet évolue.
+            </p>
+            <div className="space-y-2">
+              {MOTIVATIONS.map(def => {
+                const active = form.motivation === def.key
+                return (
+                  <button
+                    key={def.key}
+                    type="button"
+                    onClick={() => setForm(f => ({ ...f, motivation: def.key }))}
+                    className={`w-full text-left rounded-xl border p-3 transition-all ${
+                      active
+                        ? `${def.cardBg} ${def.cardBorder} ring-2 ${def.ring}`
+                        : 'bg-major-black/30 border-gray-700 hover:border-gray-500'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className="text-xl flex-shrink-0">{def.emoji}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className={`font-oswald text-sm uppercase tracking-wider ${active ? def.chipText : 'text-white'}`}>
+                          {def.label}
+                        </p>
+                        <p className="text-gray-300 font-inter text-xs leading-relaxed mt-0.5">{def.description}</p>
+                        <p className="text-gray-400 font-inter text-[11px] mt-1 italic">{def.detail}</p>
+                      </div>
+                      {active && <CheckCircle size={18} className={`flex-shrink-0 ${def.chipText}`} />}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           {/* Niveau sportif */}
