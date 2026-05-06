@@ -142,7 +142,10 @@ model Member {
   medicalCertExpiry DateTime?
   status            MemberStatus        @default(ACTIVE)
   category       MemberCategory?
-  level          String?
+  // Niveau sportif déclaré à l'inscription. Nullable pour les membres
+  // créés avant le déploiement de cette feature ; obligatoire dans le
+  // formulaire d'inscription pour tous les nouveaux membres.
+  sportLevel     SportLevel?
   licenseNumber  String?             @unique
   groupId        String?
   group          TrainingGroup?      @relation(fields: [groupId], references: [id])
@@ -153,6 +156,13 @@ model Member {
   updatedAt      DateTime            @updatedAt
 
   @@map("members")
+}
+
+enum SportLevel {
+  DEBUTANT       // Reprise / 1er entraînement, courir 20-40 min en continu
+  INTERMEDIAIRE  // 2-3×/sem, endurance + chrono 5/10K
+  CONFIRME       // Compétition régulière, 10K / semi-marathon
+  COMPETITEUR    // VMA, seuil, podium, chrono précis
 }
 
 model Coach {

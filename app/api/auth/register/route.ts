@@ -8,18 +8,24 @@ export async function POST(req: Request) {
   try {
     const body = await req.json()
     const { firstName, lastName, email, phone, password, birthDate, cin, city,
-            tshirtSize, category, photo, medicalCertUrl, medicalCertExpiry } = body
+            tshirtSize, category, photo, medicalCertUrl, medicalCertExpiry,
+            sportLevel } = body
 
     const missing: string[] = []
-    if (!firstName) missing.push('firstName')
-    if (!lastName)  missing.push('lastName')
-    if (!email)     missing.push('email')
-    if (!phone)     missing.push('phone')
-    if (!birthDate) missing.push('birthDate')
-    if (!cin)       missing.push('cin')
-    if (!password)  missing.push('password')
+    if (!firstName)  missing.push('firstName')
+    if (!lastName)   missing.push('lastName')
+    if (!email)      missing.push('email')
+    if (!phone)      missing.push('phone')
+    if (!birthDate)  missing.push('birthDate')
+    if (!cin)        missing.push('cin')
+    if (!password)   missing.push('password')
+    if (!sportLevel) missing.push('sportLevel')
     if (missing.length > 0)
       return NextResponse.json({ error: `Champs obligatoires manquants : ${missing.join(', ')}.` }, { status: 400 })
+
+    const VALID_LEVELS = ['DEBUTANT', 'INTERMEDIAIRE', 'CONFIRME', 'COMPETITEUR'] as const
+    if (!VALID_LEVELS.includes(sportLevel))
+      return NextResponse.json({ error: 'Niveau sportif invalide.' }, { status: 400 })
 
     if (password.length < 8)
       return NextResponse.json({ error: 'Mot de passe trop court.' }, { status: 400 })
@@ -48,6 +54,7 @@ export async function POST(req: Request) {
             placeOfBirth:  city || null,
             tshirtSize:        tshirtSize || 'M',
             category:          category || 'SENIOR',
+            sportLevel,
             medicalCertUrl:    medicalCertUrl    || null,
             medicalCertExpiry: medicalCertExpiry ? new Date(medicalCertExpiry) : null,
             status:            'PENDING',

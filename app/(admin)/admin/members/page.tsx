@@ -5,15 +5,17 @@ import Link from 'next/link'
 import { MemberActions } from './member-actions'
 import { MemberPhotoCell } from './member-photo-cell'
 import { ExportMembersButton } from './export-button'
+import { getLevel, SPORT_LEVELS } from '@/lib/sport-levels'
 
-interface Props { searchParams: { status?: string; search?: string } }
+interface Props { searchParams: { status?: string; search?: string; level?: string } }
 
 export default async function AdminMembersPage({ searchParams }: Props) {
-  const { status, search } = searchParams
+  const { status, search, level } = searchParams
 
   const members = await prisma.member.findMany({
     where: {
       ...(status ? { status: status as any } : {}),
+      ...(level  ? { sportLevel: level as any } : {}),
       ...(search ? {
         OR: [
           { firstName: { contains: search, mode: 'insensitive' } },
@@ -62,17 +64,44 @@ export default async function AdminMembersPage({ searchParams }: Props) {
       </div>
 
       {/* Filtres par statut */}
-      <div className="flex flex-wrap gap-3 mb-6">
+      <div className="flex flex-wrap gap-3 mb-3">
         {STATUSES.map(s => {
           const count = s ? countMap[s] ?? 0 : Object.values(countMap).reduce((a, b) => a + b, 0)
+          const params = new URLSearchParams()
+          if (s)     params.set('status', s)
+          if (level) params.set('level',  level)
           return (
-            <Link key={s || 'all'} href={s ? `/admin/members?status=${s}` : '/admin/members'}
+            <Link key={s || 'all'} href={params.toString() ? `/admin/members?${params}` : '/admin/members'}
               className={`px-4 py-2 rounded-xl text-sm font-inter border transition-colors ${
                 (status ?? '') === s
                   ? 'bg-major-primary border-major-primary text-white'
                   : 'border-gray-700 text-gray-400 hover:border-gray-500'
               }`}>
               {s ? MEMBER_STATUS_LABELS[s as any] : 'Tous'} ({count})
+            </Link>
+          )
+        })}
+      </div>
+
+      {/* Filtres par niveau sportif */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {[null, ...SPORT_LEVELS.map(l => l.key)].map(k => {
+          const def    = k ? SPORT_LEVELS.find(l => l.key === k)! : null
+          const params = new URLSearchParams()
+          if (status) params.set('status', status)
+          if (k)      params.set('level',  k)
+          const active = (level ?? null) === (k ?? null)
+          return (
+            <Link key={k ?? 'all-levels'}
+              href={params.toString() ? `/admin/members?${params}` : '/admin/members'}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-inter border transition-colors ${
+                active
+                  ? def
+                    ? `${def.cardBg} ${def.cardBorder} ${def.chipText} font-semibold`
+                    : 'bg-major-primary/20 border-major-primary text-major-accent font-semibold'
+                  : 'border-gray-800 text-gray-500 hover:border-gray-600 hover:text-white'
+              }`}>
+              {def ? <><span>{def.emoji}</span> {def.label}</> : 'Tous niveaux'}
             </Link>
           )
         })}
@@ -86,6 +115,7 @@ export default async function AdminMembersPage({ searchParams }: Props) {
               <tr>
                 <th>Membre</th>
                 <th>Licence</th>
+                <th>Niveau</th>
                 <th>Catégorie</th>
                 <th>Groupe</th>
                 <th>Certificat</th>
@@ -97,7 +127,7 @@ export default async function AdminMembersPage({ searchParams }: Props) {
             <tbody>
               {members.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="text-center py-12 text-gray-600 font-inter">
+                  <td colSpan={9} className="text-center py-12 text-gray-600 font-inter">
                     Aucun membre trouvé.
                   </td>
                 </tr>
@@ -121,6 +151,18 @@ export default async function AdminMembersPage({ searchParams }: Props) {
                     </div>
                   </td>
                   <td className="text-gray-400 text-xs font-mono">{m.licenseNumber ?? '—'}</td>
+                  <td>
+                    {(() => {
+                      const lvl = getLevel(m.sportLevel)
+                      return lvl ? (
+                        <span className={`inline-flex items-center gap-1 ${lvl.chipBg} ${lvl.chipText} text-xs font-inter font-semibold px-1.5 py-0.5 rounded`}>
+                          <span>{lvl.emoji}</span> {lvl.short}
+                        </span>
+                      ) : (
+                        <span className="text-gray-600 text-xs italic">—</span>
+                      )
+                    })()}
+                  </td>
                   <td className="text-gray-400 text-sm">{m.category ? MEMBER_CATEGORY_LABELS[m.category] : '—'}</td>
                   <td className="text-gray-400 text-sm">{m.group?.name ?? '—'}</td>
                   <td>

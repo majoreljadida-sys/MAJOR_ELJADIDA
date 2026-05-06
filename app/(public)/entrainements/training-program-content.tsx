@@ -2,8 +2,14 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Timer, Map, Zap, Activity } from 'lucide-react'
+import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Timer, Map, Zap, Activity, Sparkles } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
+import {
+  SPORT_LEVELS,
+  type LevelJsonKey,
+  type SessionLevels,
+  hasAnyLevelContent,
+} from '@/lib/sport-levels'
 
 const MONTHS_FR = [
   '', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
@@ -19,24 +25,6 @@ const TYPE_CONFIG: Record<string, { label: string; color: string; bg: string; ic
   RECUPERATION:            { label: 'Récupération', color: 'text-gray-400',   bg: 'bg-gray-900/30 border-gray-700/40',   icon: Activity },
 }
 
-interface LevelSpec { distance?: string; pace?: string; note?: string }
-type LevelKey = 'debutant' | 'senior' | 'veterans'
-type Levels = Partial<Record<LevelKey, LevelSpec>>
-
-const LEVEL_DEFS: { key: LevelKey; label: string; chipBg: string; chipText: string; cardBg: string; cardBorder: string }[] = [
-  { key: 'debutant', label: 'DÉBUTANT', chipBg: 'bg-green-900/40',  chipText: 'text-green-300',  cardBg: 'bg-green-950/30',  cardBorder: 'border-green-800/40' },
-  { key: 'senior',   label: 'SENIOR',   chipBg: 'bg-orange-900/40', chipText: 'text-orange-300', cardBg: 'bg-orange-950/30', cardBorder: 'border-orange-800/40' },
-  { key: 'veterans', label: 'VÉTÉRANS', chipBg: 'bg-sky-900/40',    chipText: 'text-sky-300',    cardBg: 'bg-sky-950/30',    cardBorder: 'border-sky-800/40' },
-]
-
-function hasLevels(l: Levels | null | undefined): boolean {
-  if (!l) return false
-  return LEVEL_DEFS.some(d => {
-    const v = l[d.key]
-    return v && (v.distance || v.pace || v.note)
-  })
-}
-
 interface Session {
   id: string
   dateFrom: string
@@ -45,7 +33,7 @@ interface Session {
   description: string
   type:     string
   reminderSent: boolean
-  levels?:  Levels | null
+  levels?:  SessionLevels | null
 }
 
 interface Program {
@@ -60,11 +48,16 @@ interface Program {
 interface Props {
   program:     Program | null
   allPrograms: { id: string; month: number; year: number; title: string }[]
+  /** Niveau sportif du membre connecté — pré-sélection automatique */
+  userSportLevel?: LevelJsonKey | null
 }
 
-export function TrainingProgramContent({ program, allPrograms }: Props) {
+type LevelFilter = 'all' | LevelJsonKey
+
+export function TrainingProgramContent({ program, allPrograms, userSportLevel }: Props) {
   const router = useRouter()
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [filter, setFilter]     = useState<LevelFilter>(userSportLevel ?? 'all')
 
   // Grouper les séances par semaine
   function groupByWeek(sessions: Session[]) {
@@ -74,7 +67,7 @@ export function TrainingProgramContent({ program, allPrograms }: Props) {
 
     sessions.forEach(s => {
       const d    = new Date(s.dateFrom)
-      const day  = d.getDay() // 0=dim, 1=lun...
+      const day  = d.getDay()
       const monday = new Date(d)
       monday.setDate(d.getDate() - (day === 0 ? 6 : day - 1))
       const weekStart = monday.getTime()
@@ -115,7 +108,8 @@ export function TrainingProgramContent({ program, allPrograms }: Props) {
     router.refresh()
   }
 
-  const currentIdx = program ? allPrograms.findIndex(p => p.id === program.id) : -1
+  const currentIdx     = program ? allPrograms.findIndex(p => p.id === program.id) : -1
+  const selectedLevel  = filter === 'all' ? null : SPORT_LEVELS.find(l => l.jsonKey === filter)
 
   return (
     <div className="min-h-screen bg-major-black">
@@ -130,6 +124,81 @@ export function TrainingProgramContent({ program, allPrograms }: Props) {
             <h1 className="font-bebas text-4xl text-white tracking-widest">PROGRAMME D'ENTRAÎNEMENT</h1>
             <p className="text-gray-400 font-inter text-sm">Planification mensuelle Club MAJOR</p>
           </div>
+        </div>
+
+        {/* ── Sélecteur de niveau ───────────────────────────────────── */}
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Sparkles size={14} className="text-major-accent" />
+            <h2 className="font-oswald text-white text-sm uppercase tracking-widest">
+              Choisissez votre niveau
+            </h2>
+            {userSportLevel && (
+              <span className="text-[10px] text-major-accent font-inter">
+                · pré-sélectionné depuis votre profil
+              </span>
+            )}
+          </div>
+
+          {/* Cartes des 4 niveaux + bouton "Tous voir" */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-2.5">
+            {/* Bouton "Tous" */}
+            <button
+              onClick={() => setFilter('all')}
+              className={`text-left rounded-xl border p-3 transition-all ${
+                filter === 'all'
+                  ? 'bg-major-primary/20 border-major-accent text-white ring-2 ring-major-accent'
+                  : 'bg-major-surface border-gray-800 text-gray-400 hover:border-gray-600 hover:text-white'
+              }`}
+            >
+              <div className="font-bebas text-lg tracking-wide">Tous</div>
+              <div className="text-[10px] font-inter opacity-80 leading-tight">
+                Voir les 4 niveaux côte à côte
+              </div>
+            </button>
+
+            {/* 4 cartes de niveaux */}
+            {SPORT_LEVELS.map(def => {
+              const active = filter === def.jsonKey
+              return (
+                <button
+                  key={def.jsonKey}
+                  onClick={() => setFilter(def.jsonKey)}
+                  className={`text-left rounded-xl border p-3 transition-all ${
+                    active
+                      ? `${def.cardBg} ${def.cardBorder} ${def.chipText} ring-2 ${def.ring}`
+                      : 'bg-major-surface border-gray-800 text-gray-400 hover:border-gray-600 hover:text-white'
+                  }`}
+                >
+                  <div className="font-bebas text-lg tracking-wide flex items-center gap-1.5">
+                    <span>{def.emoji}</span>
+                    <span className={active ? def.chipText : ''}>{def.label}</span>
+                  </div>
+                  <div className="text-[10px] font-inter opacity-80 leading-tight mt-1 line-clamp-2">
+                    {def.description}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Détails du niveau sélectionné */}
+          {selectedLevel && (
+            <div className={`mt-3 rounded-xl border p-3 ${selectedLevel.cardBg} ${selectedLevel.cardBorder}`}>
+              <div className="flex items-start gap-2.5">
+                <span className="text-xl">{selectedLevel.emoji}</span>
+                <div className="flex-1">
+                  <p className={`font-oswald text-sm uppercase tracking-wider ${selectedLevel.chipText}`}>
+                    {selectedLevel.label}
+                  </p>
+                  <p className="text-gray-300 font-inter text-xs mt-0.5">{selectedLevel.description}</p>
+                  <p className="text-gray-400 font-inter text-xs mt-1">
+                    <span className="font-semibold">Objectif :</span> {selectedLevel.goal}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Sélecteur de mois */}
@@ -204,6 +273,10 @@ export function TrainingProgramContent({ program, allPrograms }: Props) {
                 const active = isToday(s)
                 const open   = expanded === s.id
 
+                // Données du niveau filtré pour la séance
+                const myLevelData = selectedLevel ? s.levels?.[selectedLevel.jsonKey] : null
+                const hasMyLevel  = Boolean(myLevelData && (myLevelData.distance || myLevelData.pace || myLevelData.note))
+
                 return (
                   <div key={s.id}
                     className={`transition-all ${active ? 'bg-major-primary/5' : 'bg-major-surface/40'}`}>
@@ -240,22 +313,42 @@ export function TrainingProgramContent({ program, allPrograms }: Props) {
                           )}
                         </div>
                         <p className="text-white font-inter font-semibold text-sm truncate">{s.title}</p>
-                        <p className="text-gray-500 text-xs font-inter mt-0.5 truncate">{s.description.split('\n')[0]}</p>
-                        {hasLevels(s.levels) && (
+
+                        {/* Mode "niveau filtré" : on met en avant les specs de mon niveau */}
+                        {selectedLevel && hasMyLevel && (
+                          <div className={`mt-1.5 inline-flex items-center gap-2 px-2.5 py-1 rounded-md border ${selectedLevel.cardBg} ${selectedLevel.cardBorder}`}>
+                            <span className={`text-[10px] font-bold ${selectedLevel.chipText}`}>{selectedLevel.short}</span>
+                            <span className="text-white text-xs font-inter font-medium">
+                              {[myLevelData?.distance, myLevelData?.pace].filter(Boolean).join(' · ') || '—'}
+                            </span>
+                          </div>
+                        )}
+                        {selectedLevel && !hasMyLevel && hasAnyLevelContent(s.levels) && (
+                          <p className="mt-1 text-gray-600 text-[11px] italic font-inter">
+                            (séance non détaillée pour ce niveau — voir « Tous »)
+                          </p>
+                        )}
+
+                        {/* Mode "Tous" : chips synthétiques des 4 niveaux */}
+                        {!selectedLevel && hasAnyLevelContent(s.levels) && (
                           <div className="flex flex-wrap gap-1 mt-1.5">
-                            {LEVEL_DEFS.map(def => {
-                              const v = s.levels?.[def.key]
+                            {SPORT_LEVELS.map(def => {
+                              const v = s.levels?.[def.jsonKey]
                               if (!v || (!v.distance && !v.pace && !v.note)) return null
                               const text = [v.distance, v.pace].filter(Boolean).join(' · ')
                               return (
-                                <span key={def.key}
+                                <span key={def.jsonKey}
                                   className={`inline-flex items-center gap-1 ${def.chipBg} ${def.chipText} text-[10px] font-inter px-1.5 py-0.5 rounded`}>
-                                  <span className="font-bold">{def.label.slice(0, 3)}</span>
+                                  <span className="font-bold">{def.short}</span>
                                   <span className="opacity-90">{text || '—'}</span>
                                 </span>
                               )
                             })}
                           </div>
+                        )}
+
+                        {!hasAnyLevelContent(s.levels) && (
+                          <p className="text-gray-500 text-xs font-inter mt-0.5 truncate">{s.description.split('\n')[0]}</p>
                         )}
                       </div>
 
@@ -268,16 +361,36 @@ export function TrainingProgramContent({ program, allPrograms }: Props) {
                         <div className={`rounded-xl border p-4 ${cfg.bg}`}>
                           <p className="text-gray-200 font-inter text-sm leading-relaxed whitespace-pre-line">{s.description}</p>
                         </div>
-                        {hasLevels(s.levels) && (
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            {LEVEL_DEFS.map(def => {
-                              const v = s.levels?.[def.key]
+
+                        {/* Mode niveau filtré : grosse carte avec le détail */}
+                        {selectedLevel && hasMyLevel && (
+                          <div className={`rounded-xl border p-4 ${selectedLevel.cardBg} ${selectedLevel.cardBorder}`}>
+                            <div className={`text-xs font-bold tracking-widest uppercase mb-2 ${selectedLevel.chipText}`}>
+                              {selectedLevel.emoji} Pour vous — {selectedLevel.label}
+                            </div>
+                            {myLevelData?.distance && (
+                              <div className="text-white font-inter text-xl font-bold">{myLevelData.distance}</div>
+                            )}
+                            {myLevelData?.pace && (
+                              <div className="text-gray-200 font-mono text-sm mt-1">{myLevelData.pace}</div>
+                            )}
+                            {myLevelData?.note && (
+                              <div className="text-gray-300 font-inter text-sm mt-2 italic">{myLevelData.note}</div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Mode "Tous" : 4 cartes de niveau */}
+                        {!selectedLevel && hasAnyLevelContent(s.levels) && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                            {SPORT_LEVELS.map(def => {
+                              const v = s.levels?.[def.jsonKey]
                               if (!v || (!v.distance && !v.pace && !v.note)) return null
                               return (
-                                <div key={def.key}
+                                <div key={def.jsonKey}
                                   className={`rounded-xl border p-3 ${def.cardBg} ${def.cardBorder}`}>
                                   <div className={`text-[10px] font-bold tracking-widest ${def.chipText} mb-1.5`}>
-                                    {def.label}
+                                    {def.emoji} {def.label.toUpperCase()}
                                   </div>
                                   {v.distance && (
                                     <div className="text-white font-inter text-sm font-semibold">{v.distance}</div>

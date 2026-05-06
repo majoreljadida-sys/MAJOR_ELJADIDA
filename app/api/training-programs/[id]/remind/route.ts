@@ -11,24 +11,20 @@ interface SessionMeta {
   location?:  string  // Lieu de la séance (ex. "Corniche, parking principal")
 }
 
-interface LevelSpec { distance?: string; pace?: string; note?: string }
-type LevelKey = 'debutant' | 'senior' | 'veterans'
-
-const LEVEL_LABELS: Record<LevelKey, string> = {
-  debutant: '🟢 DÉBUTANT',
-  senior:   '🟠 SENIOR',
-  veterans: '🔵 VÉTÉRANS',
-}
+import { SPORT_LEVELS, type LevelSpec, type SessionLevels } from '@/lib/sport-levels'
 
 function formatLevels(levels: any): string {
   if (!levels || typeof levels !== 'object') return ''
+  const sl = levels as SessionLevels
   const lines: string[] = []
-  for (const key of ['debutant', 'senior', 'veterans'] as LevelKey[]) {
-    const v = levels[key] as LevelSpec | undefined
+  for (const def of SPORT_LEVELS) {
+    const v = sl[def.jsonKey] as LevelSpec | undefined
     if (!v) continue
     const parts = [v.distance, v.pace].filter(Boolean).join(' · ')
     const note  = v.note ? ` _${v.note}_` : ''
-    if (parts || v.note) lines.push(`${LEVEL_LABELS[key]} : ${parts}${note}`)
+    if (parts || v.note) {
+      lines.push(`${def.emoji} *${def.label.toUpperCase()}* : ${parts}${note}`)
+    }
   }
   return lines.length ? lines.join('\n') + '\n\n' : ''
 }

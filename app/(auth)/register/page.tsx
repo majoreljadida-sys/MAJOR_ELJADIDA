@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Eye, EyeOff, UserPlus, AlertCircle, CheckCircle, ScrollText, ChevronDown, ShieldCheck, Upload, Loader2, User as UserIcon, X } from 'lucide-react'
 import { TSHIRT_SIZE_LABELS, MEMBER_CATEGORY_LABELS } from '@/lib/utils'
+import { SPORT_LEVELS, type SportLevelKey } from '@/lib/sport-levels'
 
 const SIZES  = Object.entries(TSHIRT_SIZE_LABELS)
 const CATS   = Object.entries(MEMBER_CATEGORY_LABELS)
@@ -108,6 +109,7 @@ export default function RegisterPage() {
     firstName: '', lastName: '', email: '', phone: '', password: '', confirmPassword: '',
     birthDate: '', cin: '', city: 'El Jadida', tshirtSize: 'M', category: 'SENIOR',
     photo: '',
+    sportLevel: '' as '' | SportLevelKey,
   })
   const [photoUploading, setPhotoUploading] = useState(false)
 
@@ -134,6 +136,7 @@ export default function RegisterPage() {
 
   async function handleSubmit() {
     if (!approved) { setError('Vous devez approuver la charte pour continuer.'); return }
+    if (!form.sportLevel) { setError('Veuillez choisir votre niveau sportif (étape 2).'); setStep(2); return }
     setLoading(true)
     setError('')
     try {
@@ -359,9 +362,57 @@ export default function RegisterPage() {
               </div>
             </div>
 
+            {/* ── Niveau sportif (obligatoire) ── */}
+            <div>
+              <label className="form-label">
+                Niveau sportif <span className="text-red-400">*</span>
+              </label>
+              <p className="text-gray-500 text-[11px] font-inter mb-2.5">
+                Cela nous aide à vous proposer les bonnes séances et le bon groupe.
+              </p>
+              <div className="space-y-2">
+                {SPORT_LEVELS.map(def => {
+                  const active = form.sportLevel === def.key
+                  return (
+                    <button
+                      key={def.key}
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, sportLevel: def.key }))}
+                      className={`w-full text-left rounded-xl border p-3 transition-all ${
+                        active
+                          ? `${def.cardBg} ${def.cardBorder} ring-2 ${def.ring}`
+                          : 'bg-major-black/30 border-gray-700 hover:border-gray-500'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <span className="text-xl flex-shrink-0">{def.emoji}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className={`font-oswald text-sm uppercase tracking-wider ${active ? def.chipText : 'text-white'}`}>
+                            {def.label}
+                          </p>
+                          <p className="text-gray-300 font-inter text-xs leading-relaxed mt-0.5">{def.description}</p>
+                          <p className="text-gray-400 font-inter text-[11px] mt-1">
+                            <span className="font-semibold">Objectif :</span> {def.goal}
+                          </p>
+                        </div>
+                        {active && <CheckCircle size={18} className={`flex-shrink-0 ${def.chipText}`} />}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
             <div className="flex gap-3 pt-2">
               <button type="button" onClick={() => setStep(1)} className="btn-secondary flex-1 py-3 text-sm">← Retour</button>
-              <button type="button" onClick={() => { setError(''); setStep(3) }} className="btn-primary flex-1 py-3 text-sm">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!form.sportLevel) { setError('Veuillez choisir votre niveau sportif.'); return }
+                  setError(''); setStep(3)
+                }}
+                className="btn-primary flex-1 py-3 text-sm"
+              >
                 Continuer →
               </button>
             </div>

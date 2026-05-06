@@ -63,8 +63,16 @@ export async function PATCH(req: Request, { params }: Params) {
     firstName, lastName, phone,
     city, tshirtSize, category,
     cin, dateOfBirth, photo,
+    sportLevel,
     memberStatus, // admin-only field
   } = body
+
+  // Validation du niveau sportif
+  if (sportLevel !== undefined && sportLevel !== null && sportLevel !== '') {
+    const VALID = ['DEBUTANT', 'INTERMEDIAIRE', 'CONFIRME', 'COMPETITEUR']
+    if (!VALID.includes(sportLevel))
+      return NextResponse.json({ error: 'Niveau sportif invalide.' }, { status: 400 })
+  }
 
   try {
     // Update member fields (firstName, lastName, phone are on Member, not User)
@@ -78,6 +86,7 @@ export async function PATCH(req: Request, { params }: Params) {
     if (cin               !== undefined) memberData.cin               = cin || null
     if (dateOfBirth       !== undefined) memberData.dateOfBirth       = dateOfBirth ? new Date(dateOfBirth) : null
     if (photo             !== undefined) memberData.photo             = photo || null
+    if (sportLevel        !== undefined) memberData.sportLevel        = sportLevel || null
     if (isAdmin && memberStatus !== undefined) memberData.status      = memberStatus
 
     // Lire le statut actuel avant mise à jour (pour détecter la transition → ACTIVE)

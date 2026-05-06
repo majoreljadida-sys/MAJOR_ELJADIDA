@@ -4,6 +4,13 @@ import { useState } from 'react'
 import { Calendar, Plus, Trash2, ChevronDown, ChevronUp, MessageCircle, CheckCircle, Pencil, X, Check, Clock, MapPin, Send } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import {
+  SPORT_LEVELS,
+  type LevelJsonKey,
+  type LevelSpec,
+  type SessionLevels,
+  hasAnyLevelContent,
+} from '@/lib/sport-levels'
 
 const MONTHS_FR = ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
   'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
@@ -27,34 +34,18 @@ const TYPE_COLORS: Record<string, string> = {
 }
 
 // ── Niveaux : variantes de la même séance (distance + allure adaptées) ──
-type LevelKey = 'debutant' | 'senior' | 'veterans'
-interface LevelSpec { distance?: string; pace?: string; note?: string }
-type Levels = Partial<Record<LevelKey, LevelSpec>>
-
-const LEVEL_DEFS: { key: LevelKey; label: string; chipBg: string; chipText: string; rowBg: string }[] = [
-  { key: 'debutant', label: 'DÉB', chipBg: 'bg-green-900/30',  chipText: 'text-green-300',  rowBg: 'bg-green-950/20' },
-  { key: 'senior',   label: 'SEN', chipBg: 'bg-orange-900/30', chipText: 'text-orange-300', rowBg: 'bg-orange-950/20' },
-  { key: 'veterans', label: 'VÉT', chipBg: 'bg-sky-900/30',    chipText: 'text-sky-300',    rowBg: 'bg-sky-950/20' },
-]
-
-const EMPTY_LEVELS: Levels = {
-  debutant: { distance: '', pace: '', note: '' },
-  senior:   { distance: '', pace: '', note: '' },
-  veterans: { distance: '', pace: '', note: '' },
-}
-
-function levelsHaveContent(l: Levels | null | undefined): boolean {
-  if (!l) return false
-  return LEVEL_DEFS.some(d => {
-    const v = l[d.key]
-    return v && (v.distance || v.pace || v.note)
-  })
+// Source des libellés/couleurs/clés : @/lib/sport-levels
+const EMPTY_LEVELS: SessionLevels = {
+  debutant:      { distance: '', pace: '', note: '' },
+  intermediaire: { distance: '', pace: '', note: '' },
+  confirme:      { distance: '', pace: '', note: '' },
+  competiteur:   { distance: '', pace: '', note: '' },
 }
 
 interface Session {
   id: string; dateFrom: string; dateTo: string | null
   title: string; description: string; type: string; reminderSent: boolean
-  levels?: Levels | null
+  levels?: SessionLevels | null
 }
 interface Program {
   id: string; month: number; year: number; title: string
@@ -96,7 +87,7 @@ export function AdminProgramsClient({ programs: initial }: { programs: Program[]
   function updateSession(i: number, field: string, val: string) {
     setSessions(s => s.map((sess, idx) => idx === i ? { ...sess, [field]: val } : sess))
   }
-  function updateLevel(i: number, key: LevelKey, field: keyof LevelSpec, val: string) {
+  function updateLevel(i: number, key: LevelJsonKey, field: keyof LevelSpec, val: string) {
     setSessions(s => s.map((sess, idx) => idx === i ? {
       ...sess,
       levels: {
@@ -105,12 +96,12 @@ export function AdminProgramsClient({ programs: initial }: { programs: Program[]
       },
     } : sess))
   }
-  function updateEditLevel(key: LevelKey, field: keyof LevelSpec, val: string) {
+  function updateEditLevel(key: LevelJsonKey, field: keyof LevelSpec, val: string) {
     setEditForm(f => ({
       ...f,
       levels: {
-        ...((f.levels ?? EMPTY_LEVELS) as Levels),
-        [key]: { ...(((f.levels ?? EMPTY_LEVELS) as Levels)[key] ?? {}), [field]: val },
+        ...((f.levels ?? EMPTY_LEVELS) as SessionLevels),
+        [key]: { ...(((f.levels ?? EMPTY_LEVELS) as SessionLevels)[key] ?? {}), [field]: val },
       },
     }))
   }
@@ -341,22 +332,22 @@ export function AdminProgramsClient({ programs: initial }: { programs: Program[]
                       Variantes par niveau (laissez vide pour ne pas décliner)
                     </label>
                     <div className="space-y-1.5 mt-1.5">
-                      {LEVEL_DEFS.map(def => {
-                        const v = (s as any).levels?.[def.key] ?? {}
+                      {SPORT_LEVELS.map(def => {
+                        const v = (s as any).levels?.[def.jsonKey] ?? {}
                         return (
-                          <div key={def.key} className={`flex items-center gap-2 rounded-md px-2 py-1.5 ${def.rowBg}`}>
-                            <span className={`${def.chipBg} ${def.chipText} text-[10px] font-bold px-2 py-0.5 rounded w-10 text-center flex-shrink-0`}>
-                              {def.label}
+                          <div key={def.jsonKey} className={`flex items-center gap-2 rounded-md px-2 py-1.5 ${def.cardBg}`}>
+                            <span className={`${def.chipBg} ${def.chipText} text-[10px] font-bold px-2 py-0.5 rounded w-12 text-center flex-shrink-0`}>
+                              {def.short}
                             </span>
                             <input className="input-dark text-xs h-8 flex-1" placeholder="Distance (ex. 8 km)"
                               value={v.distance ?? ''}
-                              onChange={e => updateLevel(i, def.key, 'distance', e.target.value)} />
+                              onChange={e => updateLevel(i, def.jsonKey, 'distance', e.target.value)} />
                             <input className="input-dark text-xs h-8 flex-1" placeholder="Allure (ex. 5:30/km)"
                               value={v.pace ?? ''}
-                              onChange={e => updateLevel(i, def.key, 'pace', e.target.value)} />
+                              onChange={e => updateLevel(i, def.jsonKey, 'pace', e.target.value)} />
                             <input className="input-dark text-xs h-8 flex-1" placeholder="Note (optionnel)"
                               value={v.note ?? ''}
-                              onChange={e => updateLevel(i, def.key, 'note', e.target.value)} />
+                              onChange={e => updateLevel(i, def.jsonKey, 'note', e.target.value)} />
                           </div>
                         )
                       })}
@@ -461,22 +452,22 @@ export function AdminProgramsClient({ programs: initial }: { programs: Program[]
                                   Variantes par niveau
                                 </label>
                                 <div className="space-y-1.5 mt-1.5">
-                                  {LEVEL_DEFS.map(def => {
-                                    const v = (editForm.levels ?? EMPTY_LEVELS)[def.key] ?? {}
+                                  {SPORT_LEVELS.map(def => {
+                                    const v = ((editForm.levels ?? EMPTY_LEVELS) as SessionLevels)[def.jsonKey] ?? {}
                                     return (
-                                      <div key={def.key} className={`flex items-center gap-2 rounded-md px-2 py-1.5 ${def.rowBg}`}>
-                                        <span className={`${def.chipBg} ${def.chipText} text-[10px] font-bold px-2 py-0.5 rounded w-10 text-center flex-shrink-0`}>
-                                          {def.label}
+                                      <div key={def.jsonKey} className={`flex items-center gap-2 rounded-md px-2 py-1.5 ${def.cardBg}`}>
+                                        <span className={`${def.chipBg} ${def.chipText} text-[10px] font-bold px-2 py-0.5 rounded w-12 text-center flex-shrink-0`}>
+                                          {def.short}
                                         </span>
                                         <input className="input-dark text-xs h-8 flex-1" placeholder="Distance"
                                           value={v.distance ?? ''}
-                                          onChange={e => updateEditLevel(def.key, 'distance', e.target.value)} />
+                                          onChange={e => updateEditLevel(def.jsonKey, 'distance', e.target.value)} />
                                         <input className="input-dark text-xs h-8 flex-1" placeholder="Allure"
                                           value={v.pace ?? ''}
-                                          onChange={e => updateEditLevel(def.key, 'pace', e.target.value)} />
+                                          onChange={e => updateEditLevel(def.jsonKey, 'pace', e.target.value)} />
                                         <input className="input-dark text-xs h-8 flex-1" placeholder="Note"
                                           value={v.note ?? ''}
-                                          onChange={e => updateEditLevel(def.key, 'note', e.target.value)} />
+                                          onChange={e => updateEditLevel(def.jsonKey, 'note', e.target.value)} />
                                       </div>
                                     )
                                   })}
@@ -508,16 +499,16 @@ export function AdminProgramsClient({ programs: initial }: { programs: Program[]
                               <div className="flex-1 min-w-0">
                                 <p className="text-white text-sm font-inter truncate">{s.title}</p>
                                 <p className="text-gray-500 text-xs font-inter truncate">{s.description?.split('\n')[0]}</p>
-                                {levelsHaveContent(s.levels) && (
+                                {hasAnyLevelContent(s.levels) && (
                                   <div className="flex flex-wrap gap-1 mt-1.5">
-                                    {LEVEL_DEFS.map(def => {
-                                      const v = s.levels?.[def.key]
+                                    {SPORT_LEVELS.map(def => {
+                                      const v = s.levels?.[def.jsonKey]
                                       if (!v || (!v.distance && !v.pace && !v.note)) return null
                                       const text = [v.distance, v.pace, v.note].filter(Boolean).join(' · ')
                                       return (
-                                        <span key={def.key}
+                                        <span key={def.jsonKey}
                                           className={`inline-flex items-center gap-1 ${def.chipBg} ${def.chipText} text-[10px] font-inter px-1.5 py-0.5 rounded`}>
-                                          <span className="font-bold">{def.label}</span>
+                                          <span className="font-bold">{def.short}</span>
                                           <span className="opacity-90">{text}</span>
                                         </span>
                                       )
