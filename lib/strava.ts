@@ -119,9 +119,14 @@ export async function getClubActivities(perPage = 20): Promise<StravaActivity[]>
   return data ?? []
 }
 
-// ── Classement hebdomadaire par athlète ────────────────────────
-// L'API Strava clubs/{id}/activities ne renvoie pas l'ID athlète,
-// uniquement firstname + lastname. On agrège par nom complet.
+// ── Classement par athlète sur les activités récentes ─────────────
+// IMPORTANT : l'API Strava /clubs/{id}/activities ne retourne PAS la
+// date des activités (Strava l'a retirée pour confidentialité). On ne
+// peut donc pas faire un vrai "depuis lundi" côté serveur. À la place,
+// on prend les N activités les plus récentes (l'API renvoie en ordre
+// anti-chronologique) et on agrège par athlète. Pour une vraie stat
+// hebdo, il faudrait synchroniser dans notre DB avec des timestamps
+// observés à chaque appel — à faire en feature séparée.
 export interface WeeklyStat {
   athleteKey:    string  // clé d'identification (firstname + lastname)
   firstname:     string
@@ -132,29 +137,24 @@ export interface WeeklyStat {
   byType:        Record<string, number>  // mètres par type d'activité
 }
 
-function startOfWeekMonday(d: Date): Date {
-  const day = d.getDay() || 7  // 1..7 (lundi=1, dimanche=7)
-  const monday = new Date(d)
-  monday.setDate(d.getDate() - (day - 1))
-  monday.setHours(0, 0, 0, 0)
-  return monday
-}
+// Types d'activités à courte/longue distance comptées dans le classement
+// d'un club de course à pied. On exclut Ride/Swim/etc. pour ne pas
+// gonfler les chiffres avec du vélo (240 km de vélo en 3 jours = normal,
+// 240 km de course = irréaliste).
+const RUN_TYPES = new Set(['Run', 'TrailRun', 'VirtualRun', 'Walk', 'Hike'])
 
-export async function getWeeklyStats(perPage = 200): Promise<WeeklyStat[]> {
-  // Récupère un large lot d'activités récentes (le club endpoint renvoie
-  // les plus récentes en premier, sans pagination réelle au-delà de 200)
+export async function getWeeklyStats(perPage = 50): Promise<WeeklyStat[]> {
+  // 50 activités ≈ 1 semaine pour un club de 30-50 membres actifs.
+  // À ajuster selon la taille du club (si le classement reste long et
+  // remonte trop loin, baisser ce nombre).
   const data = await stravaFetch(`/clubs/${CLUB_ID}/activities?per_page=${perPage}`, 900)
   if (!Array.isArray(data)) return []
 
-  const weekStart = startOfWeekMonday(new Date())
   const map = new Map<string, WeeklyStat>()
 
   for (const a of data as StravaActivity[]) {
-    // Si la date est présente, on filtre sur la semaine en cours
-    if (a.start_date_local) {
-      const d = new Date(a.start_date_local)
-      if (d < weekStart) continue
-    }
+    if (!RUN_TYPES.has(a.type)) continue  // course/marche/trail uniquement
+
     const key = `${(a.athlete?.firstname || '').trim().toLowerCase()}__${(a.athlete?.lastname || '').trim().toLowerCase()}`
     if (!key.replace(/[_]/g, '')) continue
     let stat = map.get(key)

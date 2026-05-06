@@ -141,7 +141,7 @@ export function StravaPageClient({ club, activities, members, weeklyStats, clubU
         {/* Onglets */}
         <div className="flex flex-wrap gap-1 bg-major-surface rounded-xl p-1 mb-6 w-fit">
           {([
-            { key: 'weekly',     label: `🏆 Km de la semaine` },
+            { key: 'weekly',     label: `🏆 Top adhérents` },
             { key: 'activities', label: `🏃 Activités récentes` },
             { key: 'members',    label: `👥 Membres (${members.length})` },
           ] as const).map(t => (
@@ -158,32 +158,39 @@ export function StravaPageClient({ club, activities, members, weeklyStats, clubU
         {tab === 'weekly' && (
           <div>
             {/* Bandeau récap */}
-            <div className="mb-5 flex items-center justify-between bg-gradient-to-r from-[#FC4C02]/10 to-major-surface border border-[#FC4C02]/30 rounded-xl px-5 py-4 flex-wrap gap-3">
-              <div>
-                <p className="font-oswald text-white text-sm uppercase tracking-widest">
-                  Semaine du {fmtShort(monday)} au {fmtShort(sunday)}
-                </p>
-                <p className="text-gray-400 font-inter text-xs mt-1">
-                  Classement des adhérents par kilométrage cumulé sur la semaine en cours.
-                </p>
-              </div>
-              <div className="flex gap-4 text-right">
+            <div className="mb-5 bg-gradient-to-r from-[#FC4C02]/10 to-major-surface border border-[#FC4C02]/30 rounded-xl px-5 py-4">
+              <div className="flex items-center justify-between flex-wrap gap-3">
                 <div>
-                  <p className="font-bebas text-2xl text-[#FC4C02] leading-none">{(weeklyTotalKm / 1000).toFixed(0)}</p>
-                  <p className="text-gray-500 text-[10px] font-inter uppercase">km cumulés</p>
+                  <p className="font-oswald text-white text-sm uppercase tracking-widest">
+                    Top adhérents · activités récentes (course)
+                  </p>
+                  <p className="text-gray-400 font-inter text-xs mt-1">
+                    Classement par kilométrage de course (Run, Trail, marche).
+                    Vélo et autres sports exclus.
+                  </p>
                 </div>
-                <div>
-                  <p className="font-bebas text-2xl text-white leading-none">{weeklyAthletes}</p>
-                  <p className="text-gray-500 text-[10px] font-inter uppercase">actifs</p>
+                <div className="flex gap-4 text-right">
+                  <div>
+                    <p className="font-bebas text-2xl text-[#FC4C02] leading-none">{(weeklyTotalKm / 1000).toFixed(0)}</p>
+                    <p className="text-gray-500 text-[10px] font-inter uppercase">km cumulés</p>
+                  </div>
+                  <div>
+                    <p className="font-bebas text-2xl text-white leading-none">{weeklyAthletes}</p>
+                    <p className="text-gray-500 text-[10px] font-inter uppercase">actifs</p>
+                  </div>
                 </div>
               </div>
+              <p className="text-gray-500 font-inter text-[11px] mt-3 italic">
+                ℹ Strava ne fournit pas la date des activités via son API publique des clubs.
+                Le classement porte donc sur les <b>50 dernières activités</b> du club (~1 semaine pour MAJOR).
+              </p>
             </div>
 
             {weeklyStats.length === 0 ? (
               <div className="text-center py-16 text-gray-500 font-inter">
-                Aucune activité enregistrée cette semaine.
+                Aucune activité de course enregistrée récemment.
                 <br />
-                <span className="text-xs">Pensez à synchroniser vos courses sur Strava !</span>
+                <span className="text-xs">Pensez à synchroniser vos sorties sur Strava !</span>
               </div>
             ) : (
               <div className="space-y-2">
