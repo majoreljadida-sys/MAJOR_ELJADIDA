@@ -3,8 +3,9 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import { formatDate, formatCurrency, PAYMENT_STATUS_LABELS, EVENT_TYPE_LABELS, getPaymentStatusColor } from '@/lib/utils'
-import { CreditCard, Calendar, Bell, TrendingUp, AlertCircle, CheckCircle, FileText, ShieldAlert } from 'lucide-react'
+import { CreditCard, Calendar, Bell, TrendingUp, AlertCircle, CheckCircle, FileText, ShieldAlert, Activity, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
+import { getLevel, type LevelJsonKey, type SessionLevels } from '@/lib/sport-levels'
 
 export default async function MemberDashboardPage() {
   const session = await auth()
@@ -47,6 +48,31 @@ export default async function MemberDashboardPage() {
     orderBy: { createdAt: 'desc' },
     take:    3,
   })
+
+  // ── Mes prochaines séances (programme du mois, filtré sur mon niveau) ──
+  const memberLevel    = member.sportLevel
+  const memberLevelDef = getLevel(memberLevel)
+  const memberLevelKey = memberLevel ? memberLevel.toLowerCase() as LevelJsonKey : null
+
+  const todayMidnight = new Date()
+  todayMidnight.setHours(0, 0, 0, 0)
+
+  // Récupère les 8 prochaines séances depuis aujourd'hui (toutes catégories) puis on filtre
+  const upcomingSessions = memberLevelKey
+    ? await prisma.trainingProgramSession.findMany({
+        where: { dateFrom: { gte: todayMidnight } },
+        orderBy: { dateFrom: 'asc' },
+        take: 8,
+        include: { program: { select: { title: true } } },
+      })
+    : []
+
+  // Garder seulement celles qui ont du contenu pour mon niveau, max 3
+  const mySessions = upcomingSessions.filter(s => {
+    if (!s.levels || !memberLevelKey) return false
+    const v = (s.levels as SessionLevels)[memberLevelKey]
+    return v && (v.distance || v.pace || v.note)
+  }).slice(0, 3)
 
   return (
     <div className="p-8">
@@ -118,6 +144,84 @@ export default async function MemberDashboardPage() {
           </div>
         ))}
       </div>
+
+      {/* ── Mes prochaines séances ─────────────────────────────────── */}
+      {memberLevelDef ? (
+        <div className={`card-dark mb-6 border ${memberLevelDef.cardBorder}`}>
+          <div className="flex items-center justify-between mb-5 flex-wrap gap-2">
+            <div className="flex items-center gap-3">
+              <Activity size={20} className={memberLevelDef.chipText} />
+              <div>
+                <h2 className="font-oswald text-white text-lg uppercase tracking-wide">Mes prochaines séances</h2>
+                <p className="text-gray-500 text-xs font-inter">
+                  Adapté à votre niveau{' '}
+                  <span className={`inline-flex items-center gap-1 ${memberLevelDef.chipBg} ${memberLevelDef.chipText} text-[10px] font-bold px-1.5 py-0.5 rounded ml-1`}>
+                    {memberLevelDef.emoji} {memberLevelDef.label}
+                  </span>
+                </p>
+              </div>
+            </div>
+            <Link href="/entrainements" className="text-xs text-major-accent hover:text-major-primary transition-colors font-inter">
+              Voir tout le programme →
+            </Link>
+          </div>
+
+          {mySessions.length === 0 ? (
+            <p className="text-gray-600 text-sm font-inter text-center py-6">
+              Aucune séance à venir pour votre niveau.{' '}
+              <Link href="/entrainements" className="text-major-accent hover:underline">Voir le programme complet</Link>
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {mySessions.map(s => {
+                const v = (s.levels as SessionLevels | null)?.[memberLevelKey!]
+                const distance = v?.distance ?? '—'
+                const pace     = v?.pace ?? ''
+                return (
+                  <Link
+                    key={s.id}
+                    href="/entrainements"
+                    className="flex items-center gap-4 p-3 rounded-xl bg-major-black/30 border border-gray-800 hover:border-gray-600 hover:bg-major-black/50 transition-all group"
+                  >
+                    <div className={`text-center rounded-lg px-3 py-1.5 min-w-[58px] border ${memberLevelDef.cardBg} ${memberLevelDef.cardBorder}`}>
+                      <p className="font-bebas text-xl leading-tight text-white">
+                        {formatDate(s.dateFrom, 'dd')}
+                      </p>
+                      <p className="text-[9px] font-inter uppercase text-gray-400">
+                        {formatDate(s.dateFrom, 'MMM')}
+                      </p>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white font-inter text-sm font-semibold truncate">{s.title}</p>
+                      <div className="flex items-center gap-2 mt-1 text-xs">
+                        <span className={`font-bold ${memberLevelDef.chipText}`}>{distance}</span>
+                        {pace && <span className="text-gray-400 font-mono">· {pace}</span>}
+                      </div>
+                    </div>
+                    <ChevronRight size={16} className="text-gray-600 group-hover:text-major-accent transition-colors" />
+                  </Link>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      ) : (
+        // Membre sans niveau renseigné : on l'invite à le faire
+        <div className="card-dark mb-6 border-amber-700/40 bg-amber-950/10">
+          <div className="flex items-start gap-3">
+            <Activity size={20} className="text-amber-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h2 className="font-oswald text-white text-base uppercase tracking-wide">Précisez votre niveau sportif</h2>
+              <p className="text-gray-400 text-sm font-inter mt-1">
+                Cela nous permettra de vous proposer le programme le mieux adapté.
+              </p>
+            </div>
+            <Link href="/member/profile" className="btn-primary text-xs px-3 py-2">
+              Mettre à jour
+            </Link>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent payments */}

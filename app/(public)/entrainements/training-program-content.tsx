@@ -50,14 +50,25 @@ interface Props {
   allPrograms: { id: string; month: number; year: number; title: string }[]
   /** Niveau sportif du membre connecté — pré-sélection automatique */
   userSportLevel?: LevelJsonKey | null
+  /** Prénom du membre connecté — pour personnaliser l'en-tête */
+  userFirstName?:  string | null
 }
 
 type LevelFilter = 'all' | LevelJsonKey
 
-export function TrainingProgramContent({ program, allPrograms, userSportLevel }: Props) {
+export function TrainingProgramContent({
+  program, allPrograms, userSportLevel, userFirstName,
+}: Props) {
   const router = useRouter()
   const [expanded, setExpanded] = useState<string | null>(null)
   const [filter, setFilter]     = useState<LevelFilter>(userSportLevel ?? 'all')
+  // Membre connecté : par défaut on n'affiche QUE les séances qui ont du
+  // contenu pour son niveau (vue personnalisée). Toggle pour revenir à
+  // la vue complète.
+  const [hideEmpty, setHideEmpty] = useState<boolean>(Boolean(userSportLevel))
+
+  const isMyView = Boolean(userSportLevel) && filter === userSportLevel
+  const myLevelDef = userSportLevel ? SPORT_LEVELS.find(l => l.jsonKey === userSportLevel) ?? null : null
 
   // Grouper les séances par semaine
   function groupByWeek(sessions: Session[]) {
@@ -115,16 +126,61 @@ export function TrainingProgramContent({ program, allPrograms, userSportLevel }:
     <div className="min-h-screen bg-major-black">
       <div className="max-w-5xl mx-auto px-4 py-10">
 
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <div className="p-3 bg-major-primary/10 rounded-xl border border-major-primary/20">
-            <Calendar size={28} className="text-major-accent" />
+        {/* Header — personnalisé si membre connecté avec niveau */}
+        {isMyView && myLevelDef && userFirstName ? (
+          <div className={`mb-8 rounded-2xl border p-5 ${myLevelDef.cardBg} ${myLevelDef.cardBorder}`}>
+            <div className="flex items-start gap-4 flex-wrap">
+              <div className="text-3xl">{myLevelDef.emoji}</div>
+              <div className="flex-1 min-w-[200px]">
+                <p className={`font-oswald text-xs uppercase tracking-widest ${myLevelDef.chipText}`}>
+                  Mon programme · Niveau {myLevelDef.label}
+                </p>
+                <h1 className="font-bebas text-3xl text-white tracking-wider mt-1">
+                  Bonjour {userFirstName} 👋
+                </h1>
+                <p className="text-gray-300 font-inter text-sm mt-1">{myLevelDef.description}</p>
+                <p className="text-gray-400 font-inter text-xs mt-1.5 italic">
+                  <span className="font-semibold not-italic">Objectif :</span> {myLevelDef.goal}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setFilter('all'); setHideEmpty(false) }}
+                className="text-xs font-inter text-gray-400 hover:text-white px-3 py-1.5 rounded-lg border border-gray-700 hover:border-gray-500 transition-colors"
+              >
+                Voir tous les niveaux
+              </button>
+            </div>
           </div>
-          <div>
-            <h1 className="font-bebas text-4xl text-white tracking-widest">PROGRAMME D'ENTRAÎNEMENT</h1>
-            <p className="text-gray-400 font-inter text-sm">Planification mensuelle Club MAJOR</p>
+        ) : (
+          <div className="flex items-center gap-4 mb-8">
+            <div className="p-3 bg-major-primary/10 rounded-xl border border-major-primary/20">
+              <Calendar size={28} className="text-major-accent" />
+            </div>
+            <div>
+              <h1 className="font-bebas text-4xl text-white tracking-widest">PROGRAMME D'ENTRAÎNEMENT</h1>
+              <p className="text-gray-400 font-inter text-sm">Planification mensuelle Club MAJOR</p>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Toggle "Hide empty" pour le membre quand il filtre sur son niveau */}
+        {selectedLevel && (
+          <div className="flex items-center justify-end mb-3 gap-2">
+            <span className="text-xs text-gray-500 font-inter">Masquer les séances sans détail pour ce niveau</span>
+            <button
+              type="button"
+              onClick={() => setHideEmpty(v => !v)}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                hideEmpty ? 'bg-major-primary' : 'bg-gray-700'
+              }`}
+            >
+              <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                hideEmpty ? 'translate-x-5' : 'translate-x-1'
+              }`} />
+            </button>
+          </div>
+        )}
 
         {/* ── Sélecteur de niveau ───────────────────────────────────── */}
         <div className="mb-6">
@@ -255,8 +311,24 @@ export function TrainingProgramContent({ program, allPrograms, userSportLevel }:
           </div>
         )}
 
+        {/* Helper : true si la séance a du contenu pour le niveau sélectionné */}
+        {/* (utilisé pour filtrer/masquer les séances non pertinentes) */}
+        {(() => null)()}
+
         {/* Semaines */}
-        {weeks.map((week, wi) => (
+        {weeks.map((week, wi) => {
+          // Filtrer les séances de la semaine selon hideEmpty + niveau sélectionné
+          const visibleSessions = (selectedLevel && hideEmpty)
+            ? week.filter(s => {
+                const v = s.levels?.[selectedLevel.jsonKey]
+                return v && (v.distance || v.pace || v.note)
+              })
+            : week
+
+          // Semaine entièrement masquée
+          if (visibleSessions.length === 0) return null
+
+          return (
           <div key={wi} className={`mb-6 rounded-2xl border overflow-hidden ${
             isCurrentWeek(week) ? 'border-major-primary/50 shadow-lg shadow-major-primary/10' : 'border-gray-800'
           }`}>
@@ -267,7 +339,7 @@ export function TrainingProgramContent({ program, allPrograms, userSportLevel }:
               </div>
             )}
             <div className="divide-y divide-gray-800/60">
-              {week.map(s => {
+              {visibleSessions.map(s => {
                 const cfg    = TYPE_CONFIG[s.type] ?? TYPE_CONFIG.ENDURANCE_FONDAMENTALE
                 const Icon   = cfg.icon
                 const active = isToday(s)
@@ -413,7 +485,8 @@ export function TrainingProgramContent({ program, allPrograms, userSportLevel }:
               })}
             </div>
           </div>
-        ))}
+          )
+        })}
 
         {/* Légende types de séances */}
         {program && (
