@@ -141,7 +141,7 @@ export function StravaPageClient({ club, activities, members, weeklyStats, clubU
         {/* Onglets */}
         <div className="flex flex-wrap gap-1 bg-major-surface rounded-xl p-1 mb-6 w-fit">
           {([
-            { key: 'weekly',     label: `🏆 Top adhérents` },
+            { key: 'weekly',     label: `🏆 Km de la semaine` },
             { key: 'activities', label: `🏃 Activités récentes` },
             { key: 'members',    label: `👥 Membres (${members.length})` },
           ] as const).map(t => (
@@ -162,11 +162,11 @@ export function StravaPageClient({ club, activities, members, weeklyStats, clubU
               <div className="flex items-center justify-between flex-wrap gap-3">
                 <div>
                   <p className="font-oswald text-white text-sm uppercase tracking-widest">
-                    Top adhérents · activités récentes (course)
+                    Semaine du {fmtShort(monday)} au {fmtShort(sunday)}
                   </p>
                   <p className="text-gray-400 font-inter text-xs mt-1">
-                    Classement par kilométrage de course (Run, Trail, marche).
-                    Vélo et autres sports exclus.
+                    Classement des adhérents par km de course cumulés depuis lundi.
+                    (Vélo et autres sports exclus.)
                   </p>
                 </div>
                 <div className="flex gap-4 text-right">
@@ -180,17 +180,19 @@ export function StravaPageClient({ club, activities, members, weeklyStats, clubU
                   </div>
                 </div>
               </div>
-              <p className="text-gray-500 font-inter text-[11px] mt-3 italic">
-                ℹ Strava ne fournit pas la date des activités via son API publique des clubs.
-                Le classement porte donc sur les <b>50 dernières activités</b> du club (~1 semaine pour MAJOR).
-              </p>
             </div>
 
             {weeklyStats.length === 0 ? (
-              <div className="text-center py-16 text-gray-500 font-inter">
-                Aucune activité de course enregistrée récemment.
-                <br />
-                <span className="text-xs">Pensez à synchroniser vos sorties sur Strava !</span>
+              <div className="text-center py-16 px-4">
+                <div className="text-3xl mb-3">⏳</div>
+                <p className="text-gray-300 font-inter text-sm font-semibold mb-2">
+                  Le compteur démarre maintenant
+                </p>
+                <p className="text-gray-500 font-inter text-xs max-w-md mx-auto leading-relaxed">
+                  Vos prochaines activités Strava seront capturées automatiquement
+                  toutes les heures et apparaîtront ici.
+                  <br />Allez courir, et revenez voir le classement de la semaine ! 🏃
+                </p>
               </div>
             ) : (
               <div className="space-y-2">

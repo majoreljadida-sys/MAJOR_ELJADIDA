@@ -175,6 +175,30 @@ enum MotivationGoal {
   RACE_PREP     // Préparation course (10 km, semi, marathon)
 }
 
+// Mirroir local des activités du club Strava — Strava ne retourne pas la
+// date des activités via son API publique des clubs, donc on les capture
+// nous-mêmes au fil de l'eau (cron horaire) pour pouvoir filtrer "cette
+// semaine". Le hashKey assure l'idempotence (pas de doublon si le cron
+// passe plusieurs fois).
+model StravaActivity {
+  id          String   @id @default(cuid())
+  hashKey     String   @unique  // dedup : firstName_lastName_distance_movingTime_name
+  firstName   String
+  lastName    String
+  athleteKey  String              // firstName + lastName normalisés (lowercase, sans accents)
+  name        String              // nom de l'activité tel que Strava le renvoie
+  type        String              // Run, TrailRun, Walk, Ride, etc.
+  distance    Int                 // mètres
+  movingTime  Int                 // secondes
+  elapsedTime Int                 // secondes
+  elevation   Int                 // mètres
+  observedAt  DateTime  @default(now())  // 1ère fois qu'on a vu cette activité
+
+  @@index([observedAt])
+  @@index([athleteKey])
+  @@map("strava_activities")
+}
+
 model Coach {
   id        String            @id @default(cuid())
   userId    String            @unique

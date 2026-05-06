@@ -119,59 +119,67 @@ export async function getClubActivities(perPage = 20): Promise<StravaActivity[]>
   return data ?? []
 }
 
-// ── Classement par athlète sur les activités récentes ─────────────
-// IMPORTANT : l'API Strava /clubs/{id}/activities ne retourne PAS la
-// date des activités (Strava l'a retirée pour confidentialité). On ne
-// peut donc pas faire un vrai "depuis lundi" côté serveur. À la place,
-// on prend les N activités les plus récentes (l'API renvoie en ordre
-// anti-chronologique) et on agrège par athlète. Pour une vraie stat
-// hebdo, il faudrait synchroniser dans notre DB avec des timestamps
-// observés à chaque appel — à faire en feature séparée.
+// ── Classement hebdomadaire par athlète ────────────────────────────
+// Source : table StravaActivity de notre DB, alimentée par le cron
+// /api/cron/strava-sync. Strava n'expose pas les dates sur son API
+// publique des clubs, donc on capture chaque activité au moment où on
+// la voit pour la 1ère fois (`observedAt`).
 export interface WeeklyStat {
-  athleteKey:    string  // clé d'identification (firstname + lastname)
+  athleteKey:    string
   firstname:     string
   lastname:      string
   totalDistance: number  // mètres
   totalTime:     number  // secondes
   activities:    number
-  byType:        Record<string, number>  // mètres par type d'activité
+  byType:        Record<string, number>
 }
 
-// Types d'activités à courte/longue distance comptées dans le classement
-// d'un club de course à pied. On exclut Ride/Swim/etc. pour ne pas
-// gonfler les chiffres avec du vélo (240 km de vélo en 3 jours = normal,
-// 240 km de course = irréaliste).
-const RUN_TYPES = new Set(['Run', 'TrailRun', 'VirtualRun', 'Walk', 'Hike'])
+// Types comptés (course/marche/trail). Vélo et autres exclus.
+const RUN_TYPES = ['Run', 'TrailRun', 'VirtualRun', 'Walk', 'Hike']
 
-export async function getWeeklyStats(perPage = 50): Promise<WeeklyStat[]> {
-  // 50 activités ≈ 1 semaine pour un club de 30-50 membres actifs.
-  // À ajuster selon la taille du club (si le classement reste long et
-  // remonte trop loin, baisser ce nombre).
-  const data = await stravaFetch(`/clubs/${CLUB_ID}/activities?per_page=${perPage}`, 900)
-  if (!Array.isArray(data)) return []
+function startOfWeekMonday(d: Date): Date {
+  const day = d.getDay() || 7
+  const monday = new Date(d)
+  monday.setDate(d.getDate() - (day - 1))
+  monday.setHours(0, 0, 0, 0)
+  return monday
+}
+
+export async function getWeeklyStats(): Promise<WeeklyStat[]> {
+  // Import dynamique pour éviter une dépendance circulaire (lib/strava
+  // est aussi importé par /api/cron/strava-sync qui utilise prisma).
+  const { prisma } = await import('@/lib/prisma')
+
+  const weekStart = startOfWeekMonday(new Date())
+
+  const rows = await prisma.stravaActivity.findMany({
+    where: {
+      observedAt: { gte: weekStart },
+      type:       { in: RUN_TYPES },
+    },
+    select: {
+      athleteKey: true, firstName: true, lastName: true,
+      distance: true, movingTime: true, type: true,
+    },
+  })
 
   const map = new Map<string, WeeklyStat>()
-
-  for (const a of data as StravaActivity[]) {
-    if (!RUN_TYPES.has(a.type)) continue  // course/marche/trail uniquement
-
-    const key = `${(a.athlete?.firstname || '').trim().toLowerCase()}__${(a.athlete?.lastname || '').trim().toLowerCase()}`
-    if (!key.replace(/[_]/g, '')) continue
-    let stat = map.get(key)
+  for (const a of rows) {
+    let stat = map.get(a.athleteKey)
     if (!stat) {
       stat = {
-        athleteKey: key,
-        firstname:  a.athlete?.firstname || '',
-        lastname:   a.athlete?.lastname  || '',
+        athleteKey:    a.athleteKey,
+        firstname:     a.firstName,
+        lastname:      a.lastName,
         totalDistance: 0, totalTime: 0, activities: 0,
         byType: {},
       }
-      map.set(key, stat)
+      map.set(a.athleteKey, stat)
     }
-    stat.totalDistance += a.distance || 0
-    stat.totalTime     += a.moving_time || 0
+    stat.totalDistance += a.distance
+    stat.totalTime     += a.movingTime
     stat.activities    += 1
-    stat.byType[a.type] = (stat.byType[a.type] ?? 0) + (a.distance || 0)
+    stat.byType[a.type] = (stat.byType[a.type] ?? 0) + a.distance
   }
 
   return Array.from(map.values()).sort((a, b) => b.totalDistance - a.totalDistance)

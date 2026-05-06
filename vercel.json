@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/import-current-week",
       "schedule": "0 6 * * 1"
+    },
+    {
+      "path": "/api/cron/strava-sync",
+      "schedule": "15 * * * *"
     }
   ]
 }

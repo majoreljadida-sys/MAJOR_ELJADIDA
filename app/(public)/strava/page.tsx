@@ -15,7 +15,7 @@ export default async function StravaPage() {
     getClubInfo(),
     getClubActivities(20),
     getClubMembers(50),  // récupère plus de membres pour la détection
-    getWeeklyStats(200),
+    getWeeklyStats(),
     auth(),
   ])
 
