@@ -4,6 +4,13 @@ import Link from 'next/link'
 import { Instagram, Facebook, MapPin, Phone, Mail } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n/context'
 
+// Logo Strava (SVG officiel — Lucide ne fournit pas d'icône Strava)
+const StravaIcon = ({ size = 16 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066M10.463 0l-7 13.828h4.169l2.831 5.599 2.836-5.599h4.172"/>
+  </svg>
+)
+
 export function PublicFooter() {
   const { t } = useLanguage()
 
@@ -37,8 +44,9 @@ export function PublicFooter() {
             </p>
             <div className="flex gap-3">
               {[
-                { Icon: Instagram, label: 'Instagram', href: 'https://www.instagram.com/major_running_club' },
-                { Icon: Facebook,  label: 'Facebook',  href: 'https://www.facebook.com/share/1aKcyRb9yd/'   },
+                { Icon: Instagram,  label: 'Instagram', href: 'https://www.instagram.com/major_running_club' },
+                { Icon: Facebook,   label: 'Facebook',  href: 'https://www.facebook.com/share/1aKcyRb9yd/'   },
+                { Icon: StravaIcon, label: 'Strava',    href: 'https://www.strava.com/clubs/2075788'         },
               ].map(({ Icon, label, href }) => (
                 <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={`Club MAJOR sur ${label}`}
                   className="w-9 h-9 rounded-lg bg-major-surface border border-major-primary/20 flex items-center justify-center text-gray-500 hover:text-major-accent hover:border-major-accent/40 transition-all">

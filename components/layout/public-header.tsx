@@ -3,11 +3,18 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { Menu, X, ChevronDown, User, LogOut, LayoutDashboard } from 'lucide-react'
+import { Menu, X, ChevronDown, User, LogOut, LayoutDashboard, Instagram, Facebook } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
 import { signOut } from 'next-auth/react'
 import { useLanguage } from '@/lib/i18n/context'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
+
+// Logo Strava (SVG officiel — Lucide ne fournit pas d'icône Strava)
+const StravaIcon = ({ size = 18 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066M10.463 0l-7 13.828h4.169l2.831 5.599 2.836-5.599h4.172"/>
+  </svg>
+)
 
 const NAV_KEYS = [
   { href: '/',            key: 'home'    },
@@ -71,6 +78,28 @@ export function PublicHeader() {
 
           {/* Desktop CTA */}
           <div className="hidden lg:flex items-center gap-3">
+            {/* Réseaux sociaux */}
+            <div className="flex items-center gap-2 mr-1">
+              <a href="https://www.instagram.com/major_running_club"
+                 target="_blank" rel="noopener noreferrer"
+                 aria-label="Club MAJOR sur Instagram"
+                 className="w-9 h-9 rounded-lg flex items-center justify-center bg-gradient-to-br from-fuchsia-500/15 to-pink-500/15 border border-pink-500/30 text-pink-400 hover:text-white hover:from-fuchsia-500 hover:to-pink-500 hover:border-pink-400 transition-all">
+                <Instagram size={18} />
+              </a>
+              <a href="https://www.facebook.com/share/1aKcyRb9yd/"
+                 target="_blank" rel="noopener noreferrer"
+                 aria-label="Club MAJOR sur Facebook"
+                 className="w-9 h-9 rounded-lg flex items-center justify-center bg-blue-500/15 border border-blue-500/30 text-blue-400 hover:text-white hover:bg-blue-500 hover:border-blue-400 transition-all">
+                <Facebook size={18} />
+              </a>
+              <a href="https://www.strava.com/clubs/2075788"
+                 target="_blank" rel="noopener noreferrer"
+                 aria-label="Club MAJOR sur Strava"
+                 className="w-9 h-9 rounded-lg flex items-center justify-center bg-orange-500/15 border border-orange-500/30 text-orange-400 hover:text-white hover:bg-orange-500 hover:border-orange-400 transition-all">
+                <StravaIcon size={18} />
+              </a>
+            </div>
+
             {/* Language toggle */}
             <button
               onClick={() => setLang(lang === 'fr' ? 'ar' : 'fr')}
@@ -141,6 +170,28 @@ export function PublicHeader() {
               </Link>
             ))}
             <div className="pt-3 flex flex-col gap-2 border-t border-gray-800">
+              {/* Réseaux sociaux mobile */}
+              <div className="flex items-center gap-2 pb-1">
+                <a href="https://www.instagram.com/major_running_club"
+                   target="_blank" rel="noopener noreferrer"
+                   aria-label="Club MAJOR sur Instagram"
+                   className="flex-1 h-10 rounded-lg flex items-center justify-center gap-2 bg-gradient-to-br from-fuchsia-500/15 to-pink-500/15 border border-pink-500/30 text-pink-400 text-xs font-inter font-semibold">
+                  <Instagram size={16} /> Instagram
+                </a>
+                <a href="https://www.facebook.com/share/1aKcyRb9yd/"
+                   target="_blank" rel="noopener noreferrer"
+                   aria-label="Club MAJOR sur Facebook"
+                   className="flex-1 h-10 rounded-lg flex items-center justify-center gap-2 bg-blue-500/15 border border-blue-500/30 text-blue-400 text-xs font-inter font-semibold">
+                  <Facebook size={16} /> Facebook
+                </a>
+                <a href="https://www.strava.com/clubs/2075788"
+                   target="_blank" rel="noopener noreferrer"
+                   aria-label="Club MAJOR sur Strava"
+                   className="flex-1 h-10 rounded-lg flex items-center justify-center gap-2 bg-orange-500/15 border border-orange-500/30 text-orange-400 text-xs font-inter font-semibold">
+                  <StravaIcon size={16} /> Strava
+                </a>
+              </div>
+
               {/* Language toggle mobile */}
               <div className="flex items-center gap-2">
                 <button
