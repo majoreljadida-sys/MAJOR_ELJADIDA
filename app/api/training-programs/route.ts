@@ -42,6 +42,7 @@ export async function POST(req: Request) {
             title:       s.title,
             description: s.description,
             type:        s.type,
+            levels:      s.levels ?? undefined,
           })),
         },
       },

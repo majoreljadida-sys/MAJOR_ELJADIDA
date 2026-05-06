@@ -203,6 +203,7 @@ model TrainingSession {
   group           TrainingGroup?  @relation(fields: [groupId], references: [id])
   maxParticipants Int?
   status          SessionStatus   @default(SCHEDULED)
+  presentCount    Int?            @map("present_count")  // compteur de présents (alimenté par script externe)
   attendances     Attendance[]
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
@@ -306,6 +307,9 @@ model TrainingProgramSession {
   description  String          @db.Text
   type         TrainingType
   reminderSent Boolean         @default(false)
+  // Variantes par niveau : { debutant: { distance, pace, note }, senior: {...}, veterans: {...} }
+  // Null si la séance n'est pas déclinée par niveau (rétro-compatible).
+  levels       Json?
   createdAt    DateTime        @default(now())
 
   @@map("training_program_sessions")

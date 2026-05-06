@@ -19,6 +19,24 @@ const TYPE_CONFIG: Record<string, { label: string; color: string; bg: string; ic
   RECUPERATION:            { label: 'Récupération', color: 'text-gray-400',   bg: 'bg-gray-900/30 border-gray-700/40',   icon: Activity },
 }
 
+interface LevelSpec { distance?: string; pace?: string; note?: string }
+type LevelKey = 'debutant' | 'senior' | 'veterans'
+type Levels = Partial<Record<LevelKey, LevelSpec>>
+
+const LEVEL_DEFS: { key: LevelKey; label: string; chipBg: string; chipText: string; cardBg: string; cardBorder: string }[] = [
+  { key: 'debutant', label: 'DÉBUTANT', chipBg: 'bg-green-900/40',  chipText: 'text-green-300',  cardBg: 'bg-green-950/30',  cardBorder: 'border-green-800/40' },
+  { key: 'senior',   label: 'SENIOR',   chipBg: 'bg-orange-900/40', chipText: 'text-orange-300', cardBg: 'bg-orange-950/30', cardBorder: 'border-orange-800/40' },
+  { key: 'veterans', label: 'VÉTÉRANS', chipBg: 'bg-sky-900/40',    chipText: 'text-sky-300',    cardBg: 'bg-sky-950/30',    cardBorder: 'border-sky-800/40' },
+]
+
+function hasLevels(l: Levels | null | undefined): boolean {
+  if (!l) return false
+  return LEVEL_DEFS.some(d => {
+    const v = l[d.key]
+    return v && (v.distance || v.pace || v.note)
+  })
+}
+
 interface Session {
   id: string
   dateFrom: string
@@ -27,6 +45,7 @@ interface Session {
   description: string
   type:     string
   reminderSent: boolean
+  levels?:  Levels | null
 }
 
 interface Program {
@@ -222,6 +241,22 @@ export function TrainingProgramContent({ program, allPrograms }: Props) {
                         </div>
                         <p className="text-white font-inter font-semibold text-sm truncate">{s.title}</p>
                         <p className="text-gray-500 text-xs font-inter mt-0.5 truncate">{s.description.split('\n')[0]}</p>
+                        {hasLevels(s.levels) && (
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {LEVEL_DEFS.map(def => {
+                              const v = s.levels?.[def.key]
+                              if (!v || (!v.distance && !v.pace && !v.note)) return null
+                              const text = [v.distance, v.pace].filter(Boolean).join(' · ')
+                              return (
+                                <span key={def.key}
+                                  className={`inline-flex items-center gap-1 ${def.chipBg} ${def.chipText} text-[10px] font-inter px-1.5 py-0.5 rounded`}>
+                                  <span className="font-bold">{def.label.slice(0, 3)}</span>
+                                  <span className="opacity-90">{text || '—'}</span>
+                                </span>
+                              )
+                            })}
+                          </div>
+                        )}
                       </div>
 
                       <ChevronRight size={16} className={`text-gray-600 flex-shrink-0 transition-transform ${open ? 'rotate-90' : ''}`} />
@@ -229,10 +264,35 @@ export function TrainingProgramContent({ program, allPrograms }: Props) {
 
                     {/* Détail déplié */}
                     {open && (
-                      <div className="px-5 pb-5 pt-1">
+                      <div className="px-5 pb-5 pt-1 space-y-3">
                         <div className={`rounded-xl border p-4 ${cfg.bg}`}>
                           <p className="text-gray-200 font-inter text-sm leading-relaxed whitespace-pre-line">{s.description}</p>
                         </div>
+                        {hasLevels(s.levels) && (
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            {LEVEL_DEFS.map(def => {
+                              const v = s.levels?.[def.key]
+                              if (!v || (!v.distance && !v.pace && !v.note)) return null
+                              return (
+                                <div key={def.key}
+                                  className={`rounded-xl border p-3 ${def.cardBg} ${def.cardBorder}`}>
+                                  <div className={`text-[10px] font-bold tracking-widest ${def.chipText} mb-1.5`}>
+                                    {def.label}
+                                  </div>
+                                  {v.distance && (
+                                    <div className="text-white font-inter text-sm font-semibold">{v.distance}</div>
+                                  )}
+                                  {v.pace && (
+                                    <div className="text-gray-300 font-mono text-xs mt-0.5">{v.pace}</div>
+                                  )}
+                                  {v.note && (
+                                    <div className="text-gray-400 font-inter text-xs mt-1.5 italic">{v.note}</div>
+                                  )}
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

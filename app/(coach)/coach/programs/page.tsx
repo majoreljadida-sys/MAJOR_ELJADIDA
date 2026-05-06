@@ -19,6 +19,7 @@ export default async function CoachProgramsPage() {
       ...s,
       dateFrom: s.dateFrom.toISOString(),
       dateTo:   s.dateTo?.toISOString() ?? null,
+      levels:   s.levels as any,
     })),
   }))
 

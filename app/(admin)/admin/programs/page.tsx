@@ -20,6 +20,7 @@ export default async function AdminProgramsPage() {
       ...s,
       dateFrom: s.dateFrom.toISOString(),
       dateTo:   s.dateTo?.toISOString() ?? null,
+      levels:   s.levels as any,  // JsonValue → typed shape côté client
     })),
   }))
 

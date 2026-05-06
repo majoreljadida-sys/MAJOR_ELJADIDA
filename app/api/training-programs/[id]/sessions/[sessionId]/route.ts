@@ -13,7 +13,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
 
   try {
     const body = await req.json()
-    const { dateFrom, dateTo, title, description, type } = body
+    const { dateFrom, dateTo, title, description, type, levels } = body
 
     const updated = await prisma.trainingProgramSession.update({
       where: { id: params.sessionId },
@@ -23,6 +23,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
         ...(title       && { title }),
         ...(description !== undefined && { description }),
         ...(type        && { type }),
+        ...(levels      !== undefined && { levels }),
       },
     })
     return NextResponse.json({ session: updated })

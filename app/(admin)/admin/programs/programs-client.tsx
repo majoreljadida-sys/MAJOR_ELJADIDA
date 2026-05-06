@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Calendar, Plus, Trash2, ChevronDown, ChevronUp, MessageCircle, CheckCircle, Pencil, X, Check } from 'lucide-react'
+import { Calendar, Plus, Trash2, ChevronDown, ChevronUp, MessageCircle, CheckCircle, Pencil, X, Check, Clock, MapPin, Send } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
 
@@ -26,16 +26,42 @@ const TYPE_COLORS: Record<string, string> = {
   RECUPERATION:             'text-gray-400',
 }
 
+// ── Niveaux : variantes de la même séance (distance + allure adaptées) ──
+type LevelKey = 'debutant' | 'senior' | 'veterans'
+interface LevelSpec { distance?: string; pace?: string; note?: string }
+type Levels = Partial<Record<LevelKey, LevelSpec>>
+
+const LEVEL_DEFS: { key: LevelKey; label: string; chipBg: string; chipText: string; rowBg: string }[] = [
+  { key: 'debutant', label: 'DÉB', chipBg: 'bg-green-900/30',  chipText: 'text-green-300',  rowBg: 'bg-green-950/20' },
+  { key: 'senior',   label: 'SEN', chipBg: 'bg-orange-900/30', chipText: 'text-orange-300', rowBg: 'bg-orange-950/20' },
+  { key: 'veterans', label: 'VÉT', chipBg: 'bg-sky-900/30',    chipText: 'text-sky-300',    rowBg: 'bg-sky-950/20' },
+]
+
+const EMPTY_LEVELS: Levels = {
+  debutant: { distance: '', pace: '', note: '' },
+  senior:   { distance: '', pace: '', note: '' },
+  veterans: { distance: '', pace: '', note: '' },
+}
+
+function levelsHaveContent(l: Levels | null | undefined): boolean {
+  if (!l) return false
+  return LEVEL_DEFS.some(d => {
+    const v = l[d.key]
+    return v && (v.distance || v.pace || v.note)
+  })
+}
+
 interface Session {
   id: string; dateFrom: string; dateTo: string | null
   title: string; description: string; type: string; reminderSent: boolean
+  levels?: Levels | null
 }
 interface Program {
   id: string; month: number; year: number; title: string
   description: string | null; whatsappGroup: string | null; sessions: Session[]
 }
 
-const EMPTY_SESSION = { dateFrom: '', dateTo: '', title: '', description: '', type: 'ENDURANCE_FONDAMENTALE' }
+const EMPTY_SESSION = { dateFrom: '', dateTo: '', title: '', description: '', type: 'ENDURANCE_FONDAMENTALE', levels: { ...EMPTY_LEVELS } }
 
 export function AdminProgramsClient({ programs: initial }: { programs: Program[] }) {
   const [programs, setPrograms] = useState<Program[]>(initial)
@@ -43,6 +69,12 @@ export function AdminProgramsClient({ programs: initial }: { programs: Program[]
   const [expanded, setExpanded] = useState<string | null>(null)
   const [sending, setSending]   = useState<string | null>(null)
   const [deletingSession, setDeletingSession] = useState<string | null>(null)
+
+  // Modale WhatsApp : infos logistiques à compléter avant envoi
+  const [waModal, setWaModal] = useState<{
+    programId: string; sessionId: string; sessionTitle: string
+  } | null>(null)
+  const [waForm, setWaForm] = useState({ meetTime: '', startTime: '', location: '' })
 
   // Edition d'une séance
   const [editingSession, setEditingSession] = useState<string | null>(null)
@@ -59,10 +91,28 @@ export function AdminProgramsClient({ programs: initial }: { programs: Program[]
   const [sessions, setSessions] = useState([{ ...EMPTY_SESSION }])
   const [saving, setSaving] = useState(false)
 
-  function addSession() { setSessions(s => [...s, { ...EMPTY_SESSION }]) }
+  function addSession() { setSessions(s => [...s, { ...EMPTY_SESSION, levels: { ...EMPTY_LEVELS } }]) }
   function removeSession(i: number) { setSessions(s => s.filter((_, idx) => idx !== i)) }
   function updateSession(i: number, field: string, val: string) {
     setSessions(s => s.map((sess, idx) => idx === i ? { ...sess, [field]: val } : sess))
+  }
+  function updateLevel(i: number, key: LevelKey, field: keyof LevelSpec, val: string) {
+    setSessions(s => s.map((sess, idx) => idx === i ? {
+      ...sess,
+      levels: {
+        ...(sess.levels ?? EMPTY_LEVELS),
+        [key]: { ...((sess.levels ?? EMPTY_LEVELS)[key] ?? {}), [field]: val },
+      },
+    } : sess))
+  }
+  function updateEditLevel(key: LevelKey, field: keyof LevelSpec, val: string) {
+    setEditForm(f => ({
+      ...f,
+      levels: {
+        ...((f.levels ?? EMPTY_LEVELS) as Levels),
+        [key]: { ...(((f.levels ?? EMPTY_LEVELS) as Levels)[key] ?? {}), [field]: val },
+      },
+    }))
   }
 
   async function saveProgram() {
@@ -131,6 +181,7 @@ export function AdminProgramsClient({ programs: initial }: { programs: Program[]
       title:    s.title,
       description: s.description,
       type:     s.type,
+      levels:   { ...EMPTY_LEVELS, ...(s.levels ?? {}) },
     })
   }
 
@@ -154,13 +205,25 @@ export function AdminProgramsClient({ programs: initial }: { programs: Program[]
     }
   }
 
-  async function sendReminder(programId: string, sessionId: string) {
+  function openWhatsappModal(programId: string, sessionId: string, sessionTitle: string) {
+    setWaForm({ meetTime: '', startTime: '', location: '' })
+    setWaModal({ programId, sessionId, sessionTitle })
+  }
+
+  async function sendReminder() {
+    if (!waModal) return
+    const { programId, sessionId } = waModal
     setSending(sessionId)
     try {
-      const res  = await fetch(`/api/training-programs/${programId}/remind`, {
+      const res = await fetch(`/api/training-programs/${programId}/remind`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId }),
+        body: JSON.stringify({
+          sessionId,
+          meetTime:  waForm.meetTime  || undefined,
+          startTime: waForm.startTime || undefined,
+          location:  waForm.location  || undefined,
+        }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
@@ -170,6 +233,7 @@ export function AdminProgramsClient({ programs: initial }: { programs: Program[]
         sessions: p.sessions.map(s => s.id === sessionId ? { ...s, reminderSent: true } : s),
       } : p))
       toast.success('WhatsApp ouvert !')
+      setWaModal(null)
     } catch (err: any) {
       toast.error(err.message)
     } finally {
@@ -261,7 +325,7 @@ export function AdminProgramsClient({ programs: initial }: { programs: Program[]
                       <label className="form-label text-[10px]">Description</label>
                       <textarea className="input-dark text-sm resize-none h-16" value={s.description}
                         onChange={e => updateSession(i, 'description', e.target.value)}
-                        placeholder="Détail de la séance..." />
+                        placeholder="Détail commun à tous les niveaux..." />
                     </div>
                     {sessions.length > 1 && (
                       <button onClick={() => removeSession(i)}
@@ -269,6 +333,34 @@ export function AdminProgramsClient({ programs: initial }: { programs: Program[]
                         <Trash2 size={15} />
                       </button>
                     )}
+                  </div>
+
+                  {/* ── Variantes par niveau (optionnel) ── */}
+                  <div className="mt-3 pt-3 border-t border-gray-800/60">
+                    <label className="form-label text-[10px] uppercase tracking-wider opacity-70">
+                      Variantes par niveau (laissez vide pour ne pas décliner)
+                    </label>
+                    <div className="space-y-1.5 mt-1.5">
+                      {LEVEL_DEFS.map(def => {
+                        const v = (s as any).levels?.[def.key] ?? {}
+                        return (
+                          <div key={def.key} className={`flex items-center gap-2 rounded-md px-2 py-1.5 ${def.rowBg}`}>
+                            <span className={`${def.chipBg} ${def.chipText} text-[10px] font-bold px-2 py-0.5 rounded w-10 text-center flex-shrink-0`}>
+                              {def.label}
+                            </span>
+                            <input className="input-dark text-xs h-8 flex-1" placeholder="Distance (ex. 8 km)"
+                              value={v.distance ?? ''}
+                              onChange={e => updateLevel(i, def.key, 'distance', e.target.value)} />
+                            <input className="input-dark text-xs h-8 flex-1" placeholder="Allure (ex. 5:30/km)"
+                              value={v.pace ?? ''}
+                              onChange={e => updateLevel(i, def.key, 'pace', e.target.value)} />
+                            <input className="input-dark text-xs h-8 flex-1" placeholder="Note (optionnel)"
+                              value={v.note ?? ''}
+                              onChange={e => updateLevel(i, def.key, 'note', e.target.value)} />
+                          </div>
+                        )
+                      })}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -363,6 +455,33 @@ export function AdminProgramsClient({ programs: initial }: { programs: Program[]
                                   value={editForm.description as string}
                                   onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} />
                               </div>
+                              {/* ── Variantes par niveau ── */}
+                              <div className="pt-2 border-t border-gray-800/60">
+                                <label className="form-label text-[10px] uppercase tracking-wider opacity-70">
+                                  Variantes par niveau
+                                </label>
+                                <div className="space-y-1.5 mt-1.5">
+                                  {LEVEL_DEFS.map(def => {
+                                    const v = (editForm.levels ?? EMPTY_LEVELS)[def.key] ?? {}
+                                    return (
+                                      <div key={def.key} className={`flex items-center gap-2 rounded-md px-2 py-1.5 ${def.rowBg}`}>
+                                        <span className={`${def.chipBg} ${def.chipText} text-[10px] font-bold px-2 py-0.5 rounded w-10 text-center flex-shrink-0`}>
+                                          {def.label}
+                                        </span>
+                                        <input className="input-dark text-xs h-8 flex-1" placeholder="Distance"
+                                          value={v.distance ?? ''}
+                                          onChange={e => updateEditLevel(def.key, 'distance', e.target.value)} />
+                                        <input className="input-dark text-xs h-8 flex-1" placeholder="Allure"
+                                          value={v.pace ?? ''}
+                                          onChange={e => updateEditLevel(def.key, 'pace', e.target.value)} />
+                                        <input className="input-dark text-xs h-8 flex-1" placeholder="Note"
+                                          value={v.note ?? ''}
+                                          onChange={e => updateEditLevel(def.key, 'note', e.target.value)} />
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                              </div>
                               <div className="flex gap-2">
                                 <button onClick={() => saveEdit(p.id, s.id)}
                                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-inter font-semibold bg-major-primary/20 text-major-accent border border-major-primary/30 hover:bg-major-primary/30 transition-all">
@@ -389,6 +508,22 @@ export function AdminProgramsClient({ programs: initial }: { programs: Program[]
                               <div className="flex-1 min-w-0">
                                 <p className="text-white text-sm font-inter truncate">{s.title}</p>
                                 <p className="text-gray-500 text-xs font-inter truncate">{s.description?.split('\n')[0]}</p>
+                                {levelsHaveContent(s.levels) && (
+                                  <div className="flex flex-wrap gap-1 mt-1.5">
+                                    {LEVEL_DEFS.map(def => {
+                                      const v = s.levels?.[def.key]
+                                      if (!v || (!v.distance && !v.pace && !v.note)) return null
+                                      const text = [v.distance, v.pace, v.note].filter(Boolean).join(' · ')
+                                      return (
+                                        <span key={def.key}
+                                          className={`inline-flex items-center gap-1 ${def.chipBg} ${def.chipText} text-[10px] font-inter px-1.5 py-0.5 rounded`}>
+                                          <span className="font-bold">{def.label}</span>
+                                          <span className="opacity-90">{text}</span>
+                                        </span>
+                                      )
+                                    })}
+                                  </div>
+                                )}
                               </div>
                               <div className="flex items-center gap-2">
                                 {/* Bouton Modifier */}
@@ -407,7 +542,7 @@ export function AdminProgramsClient({ programs: initial }: { programs: Program[]
                                 </button>
                                 {/* Bouton WhatsApp */}
                                 <button
-                                  onClick={() => sendReminder(p.id, s.id)}
+                                  onClick={() => openWhatsappModal(p.id, s.id, s.title)}
                                   disabled={sending === s.id}
                                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-inter font-semibold transition-all ${
                                     s.reminderSent
@@ -432,6 +567,94 @@ export function AdminProgramsClient({ programs: initial }: { programs: Program[]
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* ── Modale WhatsApp : infos logistiques ──────────────────────── */}
+      {waModal && (
+        <div
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => sending !== waModal.sessionId && setWaModal(null)}
+        >
+          <div
+            className="bg-major-surface border border-gray-700 rounded-2xl p-6 max-w-md w-full shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h3 className="font-oswald text-white text-lg uppercase tracking-wide flex items-center gap-2">
+                  <MessageCircle size={18} className="text-[#25D366]" />
+                  Envoi WhatsApp
+                </h3>
+                <p className="text-gray-400 font-inter text-xs mt-1 truncate max-w-xs">{waModal.sessionTitle}</p>
+              </div>
+              <button onClick={() => setWaModal(null)} className="text-gray-500 hover:text-white transition-colors">
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-gray-400 font-inter text-xs mb-4">
+              Complétez les infos logistiques (laissez vide pour omettre).
+            </p>
+
+            <div className="space-y-3">
+              <div>
+                <label className="form-label flex items-center gap-1.5 text-xs">
+                  <MapPin size={12} className="text-major-accent" /> Lieu de la séance
+                </label>
+                <input
+                  className="input-dark text-sm"
+                  placeholder="ex. Corniche, parking principal"
+                  value={waForm.location}
+                  onChange={e => setWaForm(f => ({ ...f, location: e.target.value }))}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="form-label flex items-center gap-1.5 text-xs">
+                    <Clock size={12} className="text-major-accent" /> Rassemblement
+                  </label>
+                  <input
+                    type="time"
+                    className="input-dark text-sm"
+                    value={waForm.meetTime}
+                    onChange={e => setWaForm(f => ({ ...f, meetTime: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="form-label flex items-center gap-1.5 text-xs">
+                    <Clock size={12} className="text-major-accent" /> Départ
+                  </label>
+                  <input
+                    type="time"
+                    className="input-dark text-sm"
+                    value={waForm.startTime}
+                    onChange={e => setWaForm(f => ({ ...f, startTime: e.target.value }))}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-6">
+              <button
+                onClick={() => setWaModal(null)}
+                disabled={sending === waModal.sessionId}
+                className="flex-1 px-4 py-2.5 rounded-lg text-sm font-inter font-semibold bg-gray-800 text-gray-400 border border-gray-700 hover:text-white transition-all disabled:opacity-50"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={sendReminder}
+                disabled={sending === waModal.sessionId}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-inter font-semibold bg-[#25D366] text-white hover:bg-[#1fb955] transition-all disabled:opacity-60"
+              >
+                {sending === waModal.sessionId
+                  ? 'Ouverture…'
+                  : <><Send size={14} /> Ouvrir WhatsApp</>
+                }
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
