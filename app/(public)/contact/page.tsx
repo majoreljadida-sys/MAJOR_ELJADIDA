@@ -1,8 +1,39 @@
 'use client'
 
 import { useState } from 'react'
-import { Mail, Phone, MapPin, Clock, Send, CheckCircle } from 'lucide-react'
+import { Mail, Phone, MapPin, Clock, Send, CheckCircle, Instagram, Facebook } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n/context'
+
+// Logo Strava (SVG officiel — Lucide ne fournit pas d'icône Strava)
+const StravaIcon = ({ size = 18 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066M10.463 0l-7 13.828h4.169l2.831 5.599 2.836-5.599h4.172"/>
+  </svg>
+)
+
+const SOCIALS = [
+  {
+    name: 'Instagram',
+    handle: '@major_running_club',
+    href: 'https://www.instagram.com/major_running_club',
+    Icon: Instagram,
+    classes: 'bg-gradient-to-br from-fuchsia-500/15 to-pink-500/15 border-pink-500/30 text-pink-400 hover:from-fuchsia-500 hover:to-pink-500 hover:text-white hover:border-pink-400',
+  },
+  {
+    name: 'Facebook',
+    handle: 'Club MAJOR El Jadida',
+    href: 'https://www.facebook.com/share/1aKcyRb9yd/',
+    Icon: Facebook,
+    classes: 'bg-blue-500/15 border-blue-500/30 text-blue-400 hover:bg-blue-500 hover:text-white hover:border-blue-400',
+  },
+  {
+    name: 'Strava',
+    handle: 'Major Running Club',
+    href: 'https://www.strava.com/clubs/2075788',
+    Icon: StravaIcon,
+    classes: 'bg-orange-500/15 border-orange-500/30 text-orange-400 hover:bg-orange-500 hover:text-white hover:border-orange-400',
+  },
+]
 
 export default function ContactPage() {
   const { t } = useLanguage()
@@ -52,6 +83,24 @@ export default function ContactPage() {
                 </div>
               </div>
             ))}
+
+            {/* Réseaux sociaux */}
+            <div className="card-dark">
+              <p className="text-gray-500 text-xs font-inter uppercase tracking-widest mb-4">Suivez-nous</p>
+              <div className="space-y-2.5">
+                {SOCIALS.map(({ name, handle, href, Icon, classes }) => (
+                  <a key={name} href={href} target="_blank" rel="noopener noreferrer"
+                    aria-label={`Club MAJOR sur ${name}`}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all ${classes}`}>
+                    <Icon size={20} />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-inter text-sm font-semibold leading-tight">{name}</p>
+                      <p className="text-xs opacity-80 truncate">{handle}</p>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
 
             {/* Map placeholder */}
             <div className="rounded-2xl overflow-hidden border border-major-primary/20 h-48 bg-major-surface flex items-center justify-center">
