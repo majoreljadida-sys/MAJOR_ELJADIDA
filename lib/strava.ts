@@ -119,6 +119,64 @@ export async function getClubActivities(perPage = 20): Promise<StravaActivity[]>
   return data ?? []
 }
 
+// ── Classement hebdomadaire par athlète ────────────────────────
+// L'API Strava clubs/{id}/activities ne renvoie pas l'ID athlète,
+// uniquement firstname + lastname. On agrège par nom complet.
+export interface WeeklyStat {
+  athleteKey:    string  // clé d'identification (firstname + lastname)
+  firstname:     string
+  lastname:      string
+  totalDistance: number  // mètres
+  totalTime:     number  // secondes
+  activities:    number
+  byType:        Record<string, number>  // mètres par type d'activité
+}
+
+function startOfWeekMonday(d: Date): Date {
+  const day = d.getDay() || 7  // 1..7 (lundi=1, dimanche=7)
+  const monday = new Date(d)
+  monday.setDate(d.getDate() - (day - 1))
+  monday.setHours(0, 0, 0, 0)
+  return monday
+}
+
+export async function getWeeklyStats(perPage = 200): Promise<WeeklyStat[]> {
+  // Récupère un large lot d'activités récentes (le club endpoint renvoie
+  // les plus récentes en premier, sans pagination réelle au-delà de 200)
+  const data = await stravaFetch(`/clubs/${CLUB_ID}/activities?per_page=${perPage}`, 900)
+  if (!Array.isArray(data)) return []
+
+  const weekStart = startOfWeekMonday(new Date())
+  const map = new Map<string, WeeklyStat>()
+
+  for (const a of data as StravaActivity[]) {
+    // Si la date est présente, on filtre sur la semaine en cours
+    if (a.start_date_local) {
+      const d = new Date(a.start_date_local)
+      if (d < weekStart) continue
+    }
+    const key = `${(a.athlete?.firstname || '').trim().toLowerCase()}__${(a.athlete?.lastname || '').trim().toLowerCase()}`
+    if (!key.replace(/[_]/g, '')) continue
+    let stat = map.get(key)
+    if (!stat) {
+      stat = {
+        athleteKey: key,
+        firstname:  a.athlete?.firstname || '',
+        lastname:   a.athlete?.lastname  || '',
+        totalDistance: 0, totalTime: 0, activities: 0,
+        byType: {},
+      }
+      map.set(key, stat)
+    }
+    stat.totalDistance += a.distance || 0
+    stat.totalTime     += a.moving_time || 0
+    stat.activities    += 1
+    stat.byType[a.type] = (stat.byType[a.type] ?? 0) + (a.distance || 0)
+  }
+
+  return Array.from(map.values()).sort((a, b) => b.totalDistance - a.totalDistance)
+}
+
 export async function getClubMembers(perPage = 30): Promise<StravaMember[]> {
   const data = await stravaFetch(`/clubs/${CLUB_ID}/members?per_page=${perPage}`, 3600)
   return data ?? []
