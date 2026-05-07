@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Users, Activity, TrendingUp, ExternalLink, MapPin, Trophy, Medal } from 'lucide-react'
+import { Users, Activity, TrendingUp, ExternalLink, MapPin, Trophy, Medal, Info } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
 import type { StravaClub, StravaActivity, StravaMember, WeeklyStat } from '@/lib/strava'
 
@@ -297,9 +297,38 @@ export function StravaPageClient({ club, activities, members, weeklyStats, clubU
 
         {/* Membres */}
         {tab === 'members' && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {members.length === 0 ? (
-              <div className="col-span-full text-center py-16 text-gray-500 font-inter">Aucun membre trouvé.</div>
+          <div>
+            {/* ⚠ Notification importante : limitation API Strava */}
+            <div className="mb-5 bg-amber-950/30 border-2 border-amber-700/50 rounded-xl px-5 py-4">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center">
+                  <Info size={16} className="text-amber-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-oswald text-amber-300 text-sm uppercase tracking-widest mb-1.5">
+                    Liste partielle — limitation Strava
+                  </p>
+                  <p className="text-gray-300 font-inter text-xs leading-relaxed">
+                    L'API publique de Strava ne retourne que les membres ayant
+                    <span className="text-amber-300 font-semibold"> autorisé le partage de leurs données via l'API</span>.
+                    Les autres membres du club existent bien sur Strava mais n'apparaissent pas ici.
+                  </p>
+                  <p className="text-gray-400 font-inter text-xs leading-relaxed mt-2">
+                    Le club compte en réalité <b className="text-white">{club.member_count} membres</b> au total.
+                    Pour la liste complète, consultez le club sur Strava.
+                  </p>
+                  <a href={clubUrl} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 mt-3 text-xs font-inter font-semibold text-amber-300 hover:text-amber-200 transition-colors">
+                    <ExternalLink size={12} />
+                    Voir les {club.member_count} membres sur Strava
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {members.length === 0 ? (
+                <div className="col-span-full text-center py-16 text-gray-500 font-inter">Aucun membre trouvé.</div>
             ) : (
               members.map((m, i) => (
                 <div key={i} className="card-dark flex flex-col items-center text-center py-5">
@@ -316,6 +345,7 @@ export function StravaPageClient({ club, activities, members, weeklyStats, clubU
                 </div>
               ))
             )}
+            </div>
           </div>
         )}
 
