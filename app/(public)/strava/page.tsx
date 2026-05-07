@@ -11,16 +11,39 @@ function normalize(s: string | null | undefined) {
 }
 
 export default async function StravaPage() {
-  const [club, activities, members, weeklyStats, session] = await Promise.all([
+  const [club, activities, members, weeklyStats, session, dbMembers] = await Promise.all([
     getClubInfo(),
     getClubActivities(20),
-    getClubMembers(50),  // récupère plus de membres pour la détection
+    getClubMembers(50),
     getWeeklyStats(),
     auth(),
+    // Tous les membres du club MAJOR (DB) — utilisé pour récupérer les
+    // photos puisque Strava ne les expose pas via l'API publique.
+    prisma.member.findMany({
+      select: { firstName: true, lastName: true, photo: true },
+    }),
   ])
 
+  // Enrichit chaque membre Strava avec sa photo MAJOR si on retrouve
+  // un membre correspondant dans la DB (matching par prénom + initiale
+  // du nom, puisque Strava tronque le lastname à la 1ère lettre).
+  const enrichedMembers = members.map(m => {
+    const stravaFirst   = normalize(m.firstname)
+    const stravaLastInit = normalize(m.lastname).charAt(0)  // "A." → "a"
+    const match = dbMembers.find(db => {
+      const dbFirst    = normalize(db.firstName)
+      const dbLastInit = normalize(db.lastName).charAt(0)
+      return dbFirst === stravaFirst && dbLastInit === stravaLastInit
+    })
+    return {
+      ...m,
+      // Si on a trouvé une photo en DB, on l'utilise comme profile_medium
+      profile_medium: m.profile_medium || match?.photo || '',
+      profile:        m.profile        || match?.photo || '',
+    }
+  })
+
   // Détecte si l'utilisateur connecté est déjà dans le club Strava
-  // (matching par firstName + lastName, insensible aux accents/casse)
   let isInStravaClub = false
   if (session?.user?.id) {
     const member = await prisma.member.findFirst({
@@ -28,11 +51,11 @@ export default async function StravaPage() {
       select: { firstName: true, lastName: true },
     })
     if (member) {
-      const myFirst = normalize(member.firstName)
-      const myLast  = normalize(member.lastName)
+      const myFirst    = normalize(member.firstName)
+      const myLastInit = normalize(member.lastName).charAt(0)
       isInStravaClub = members.some(m =>
         normalize(m.firstname) === myFirst &&
-        normalize(m.lastname)  === myLast
+        normalize(m.lastname).charAt(0) === myLastInit
       )
     }
   }
@@ -41,7 +64,7 @@ export default async function StravaPage() {
     <StravaPageClient
       club={club}
       activities={activities}
-      members={members}
+      members={enrichedMembers}
       weeklyStats={weeklyStats}
       clubUrl={stravaClubUrl()}
       isInStravaClub={isInStravaClub}
