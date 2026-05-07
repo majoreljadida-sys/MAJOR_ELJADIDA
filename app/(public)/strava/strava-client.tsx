@@ -138,6 +138,33 @@ export function StravaPageClient({ club, activities, members, weeklyStats, clubU
           ))}
         </div>
 
+        {/* ⚠ Notification globale — limitation API Strava (visible sur tous les onglets) */}
+        <div className="mb-5 bg-amber-950/30 border-2 border-amber-700/50 rounded-xl px-5 py-4">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center">
+              <Info size={16} className="text-amber-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-oswald text-amber-300 text-sm uppercase tracking-widest mb-1.5">
+                Données partielles — limitation Strava
+              </p>
+              <p className="text-gray-300 font-inter text-xs leading-relaxed">
+                L'API publique de Strava ne retourne que les <span className="text-amber-300 font-semibold">membres et activités publics</span> ayant
+                autorisé le partage via l'API. Les autres existent bien sur Strava mais n'apparaissent pas ici (membres, activités, classement).
+              </p>
+              <p className="text-gray-400 font-inter text-xs leading-relaxed mt-2">
+                Le club compte en réalité <b className="text-white">{club.member_count} membres</b> au total.
+                Pour les données complètes, consultez le club sur Strava.
+              </p>
+              <a href={clubUrl} target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 mt-3 text-xs font-inter font-semibold text-amber-300 hover:text-amber-200 transition-colors">
+                <ExternalLink size={12} />
+                Voir le club complet sur Strava
+              </a>
+            </div>
+          </div>
+        </div>
+
         {/* Onglets */}
         <div className="flex flex-wrap gap-1 bg-major-surface rounded-xl p-1 mb-6 w-fit">
           {([
@@ -298,34 +325,6 @@ export function StravaPageClient({ club, activities, members, weeklyStats, clubU
         {/* Membres */}
         {tab === 'members' && (
           <div>
-            {/* ⚠ Notification importante : limitation API Strava */}
-            <div className="mb-5 bg-amber-950/30 border-2 border-amber-700/50 rounded-xl px-5 py-4">
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center">
-                  <Info size={16} className="text-amber-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-oswald text-amber-300 text-sm uppercase tracking-widest mb-1.5">
-                    Liste partielle — limitation Strava
-                  </p>
-                  <p className="text-gray-300 font-inter text-xs leading-relaxed">
-                    L'API publique de Strava ne retourne que les membres ayant
-                    <span className="text-amber-300 font-semibold"> autorisé le partage de leurs données via l'API</span>.
-                    Les autres membres du club existent bien sur Strava mais n'apparaissent pas ici.
-                  </p>
-                  <p className="text-gray-400 font-inter text-xs leading-relaxed mt-2">
-                    Le club compte en réalité <b className="text-white">{club.member_count} membres</b> au total.
-                    Pour la liste complète, consultez le club sur Strava.
-                  </p>
-                  <a href={clubUrl} target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 mt-3 text-xs font-inter font-semibold text-amber-300 hover:text-amber-200 transition-colors">
-                    <ExternalLink size={12} />
-                    Voir les {club.member_count} membres sur Strava
-                  </a>
-                </div>
-              </div>
-            </div>
-
             {members.length === 0 ? (
               <div className="text-center py-16 text-gray-500 font-inter">Aucun membre trouvé.</div>
             ) : (
