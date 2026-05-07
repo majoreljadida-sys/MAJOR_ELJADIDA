@@ -326,26 +326,90 @@ export function StravaPageClient({ club, activities, members, weeklyStats, clubU
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {members.length === 0 ? (
-                <div className="col-span-full text-center py-16 text-gray-500 font-inter">Aucun membre trouvé.</div>
+            {members.length === 0 ? (
+              <div className="text-center py-16 text-gray-500 font-inter">Aucun membre trouvé.</div>
             ) : (
-              members.map((m, i) => (
-                <div key={i} className="card-dark flex flex-col items-center text-center py-5">
-                  <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-[#FC4C02]/30 mb-3 bg-major-surface flex-shrink-0">
-                    {m.profile_medium
-                      ? <img src={m.profile_medium} alt={m.firstname} className="w-full h-full object-cover" />
-                      : <div className="w-full h-full flex items-center justify-center text-major-accent text-lg font-bold">
-                          {m.firstname[0]}{m.lastname[0]}
+              <div className="space-y-2">
+                {members.map((m, i) => {
+                  // Matche le membre avec ses stats hebdo (par nom normalisé)
+                  const norm = (s: string) => (s ?? '').trim().toLowerCase()
+                    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+                  const key   = `${norm(m.firstname)}__${norm(m.lastname)}`
+                  const stat  = weeklyStats.find(w => w.athleteKey === key)
+                  const rank  = stat ? weeklyStats.indexOf(stat) + 1 : null
+                  const isActive = Boolean(stat && stat.totalDistance > 0)
+                  const km    = stat ? (stat.totalDistance / 1000).toFixed(1) : null
+
+                  return (
+                    <div key={i}
+                      className={`card-dark flex items-center gap-4 transition-colors ${
+                        rank && rank <= 3 ? 'border-[#FC4C02]/40' : ''
+                      }`}>
+                      {/* Photo de profil */}
+                      <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-[#FC4C02]/30 bg-major-surface flex-shrink-0">
+                        {m.profile_medium
+                          ? <img src={m.profile_medium} alt={m.firstname} className="w-full h-full object-cover" />
+                          : <div className="w-full h-full flex items-center justify-center text-major-accent text-base font-bold">
+                              {m.firstname[0]}{m.lastname[0]}
+                            </div>
+                        }
+                      </div>
+
+                      {/* Identité */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-white font-inter font-semibold text-sm truncate">
+                            {m.firstname} {m.lastname[0]}.
+                          </p>
+                          {/* Médaille top 3 */}
+                          {rank === 1 && <Medal size={16} className="text-yellow-400 flex-shrink-0" />}
+                          {rank === 2 && <Medal size={16} className="text-gray-300 flex-shrink-0" />}
+                          {rank === 3 && <Medal size={16} className="text-amber-600 flex-shrink-0" />}
+                          {/* Badge de statut */}
+                          {isActive ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-inter font-semibold px-1.5 py-0.5 rounded bg-emerald-900/40 text-emerald-300 border border-emerald-700/40">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                              Actif cette semaine
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center text-[10px] font-inter px-1.5 py-0.5 rounded bg-gray-800 text-gray-500 border border-gray-700">
+                              ⏸ Pas d'activité cette semaine
+                            </span>
+                          )}
                         </div>
-                    }
-                  </div>
-                  <p className="text-white font-inter font-medium text-sm">{m.firstname} {m.lastname[0]}.</p>
-                  {m.city && <p className="text-gray-500 text-xs font-inter mt-0.5">{m.city}</p>}
-                </div>
-              ))
+                        {m.city && (
+                          <p className="text-gray-500 text-xs font-inter mt-0.5 flex items-center gap-1">
+                            <MapPin size={10} className="flex-shrink-0" /> {m.city}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Stats hebdo */}
+                      <div className="text-right flex-shrink-0">
+                        {isActive ? (
+                          <>
+                            <p className="font-bebas text-2xl text-[#FC4C02] leading-none">{km}</p>
+                            <p className="text-gray-500 text-[9px] font-inter uppercase tracking-wider">km · {stat!.activities} act.</p>
+                            {rank && rank <= 10 && (
+                              <p className={`text-[10px] font-inter font-semibold mt-0.5 ${
+                                rank === 1 ? 'text-yellow-400' :
+                                rank === 2 ? 'text-gray-300' :
+                                rank === 3 ? 'text-amber-600' :
+                                'text-gray-500'
+                              }`}>
+                                {rank === 1 ? '🥇 1er' : rank === 2 ? '🥈 2e' : rank === 3 ? '🥉 3e' : `#${rank}`}
+                              </p>
+                            )}
+                          </>
+                        ) : (
+                          <p className="text-gray-600 text-xs font-inter italic">—</p>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             )}
-            </div>
           </div>
         )}
 
