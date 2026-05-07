@@ -10,6 +10,7 @@ import {
   type SessionLevels,
   hasAnyLevelContent,
 } from '@/lib/sport-levels'
+import { VMACalculator } from '@/components/vma-calculator'
 
 const MONTHS_FR = [
   '', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
@@ -52,12 +53,14 @@ interface Props {
   userSportLevel?: LevelJsonKey | null
   /** Prénom du membre connecté — pour personnaliser l'en-tête */
   userFirstName?:  string | null
+  /** ID du membre connecté — pour sauver le niveau via le calculateur VMA */
+  userMemberId?:   string | null
 }
 
 type LevelFilter = 'all' | LevelJsonKey
 
 export function TrainingProgramContent({
-  program, allPrograms, userSportLevel, userFirstName,
+  program, allPrograms, userSportLevel, userFirstName, userMemberId,
 }: Props) {
   const router = useRouter()
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -255,6 +258,11 @@ export function TrainingProgramContent({
               </div>
             </div>
           )}
+        </div>
+
+        {/* ── Calculateur VMA ─────────────────────────────────────── */}
+        <div className="mb-6">
+          <VMACalculator memberId={userMemberId ?? null} />
         </div>
 
         {/* Sélecteur de mois */}

@@ -8,19 +8,21 @@ export default async function EntrainementsPage() {
   const month = now.getMonth() + 1
   const year  = now.getFullYear()
 
-  // Si membre connecté, on récupère son niveau sportif et son prénom
+  // Si membre connecté, on récupère son niveau sportif, son prénom, son id
   const session = await auth()
   let userSportLevel: LevelJsonKey | null = null
-  let userFirstName: string | null = null
+  let userFirstName:  string | null = null
+  let userMemberId:   string | null = null
   if (session?.user?.id) {
     const member = await prisma.member.findFirst({
       where:  { userId: session.user.id },
-      select: { sportLevel: true, firstName: true },
+      select: { id: true, sportLevel: true, firstName: true },
     })
     if (member?.sportLevel) {
       userSportLevel = member.sportLevel.toLowerCase() as LevelJsonKey
     }
     userFirstName = member?.firstName ?? null
+    userMemberId  = member?.id        ?? null
   }
 
   // Programme du mois en cours, sinon le plus récent
@@ -57,5 +59,6 @@ export default async function EntrainementsPage() {
     allPrograms={allPrograms}
     userSportLevel={userSportLevel}
     userFirstName={userFirstName}
+    userMemberId={userMemberId}
   />
 }
