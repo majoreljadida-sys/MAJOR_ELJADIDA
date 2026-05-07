@@ -111,6 +111,7 @@ export default function RegisterPage() {
     photo: '',
     sportLevel: '' as '' | SportLevelKey,
     motivation: '' as '' | MotivationKey,
+    emergencyContact: '', emergencyPhone: '',
   })
   const [photoUploading, setPhotoUploading] = useState(false)
 
@@ -263,6 +264,30 @@ export default function RegisterPage() {
                 value={form.confirmPassword} onChange={e => set('confirmPassword', e.target.value)} />
             </div>
 
+            {/* ── Contact d'urgence (obligatoire) ────────────────────── */}
+            <div className="border-t border-gray-800 pt-4 mt-2">
+              <h4 className="font-oswald text-major-accent text-sm uppercase tracking-widest mb-1">
+                🆘 Contact d'urgence <span className="text-red-400">*</span>
+              </h4>
+              <p className="text-gray-500 text-[11px] font-inter mb-3">
+                Personne à prévenir en cas de problème pendant un entraînement ou une course.
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="form-label">Nom complet *</label>
+                  <input className="input-dark" placeholder="Ex : Fatima Baskoun"
+                    value={form.emergencyContact}
+                    onChange={e => set('emergencyContact', e.target.value)} />
+                </div>
+                <div>
+                  <label className="form-label">Téléphone *</label>
+                  <input type="tel" className="input-dark" placeholder="+212 6XX XXX XXX"
+                    value={form.emergencyPhone}
+                    onChange={e => set('emergencyPhone', e.target.value)} />
+                </div>
+              </div>
+            </div>
+
             <button type="button" onClick={async () => {
               const missing: string[] = []
               if (!form.firstName.trim()) missing.push('Prénom')
@@ -272,6 +297,8 @@ export default function RegisterPage() {
               if (!form.birthDate)        missing.push('Date de naissance')
               if (!form.cin.trim())       missing.push('N° CIN')
               if (!form.password)         missing.push('Mot de passe')
+              if (!form.emergencyContact.trim()) missing.push('Contact d\'urgence (nom)')
+              if (!form.emergencyPhone.trim())   missing.push('Contact d\'urgence (téléphone)')
               if (missing.length > 0)
                 return setError(`Champs obligatoires manquants : ${missing.join(', ')}.`)
               if (form.password !== form.confirmPassword)

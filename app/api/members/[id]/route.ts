@@ -64,6 +64,7 @@ export async function PATCH(req: Request, { params }: Params) {
     city, tshirtSize, category,
     cin, dateOfBirth, photo,
     sportLevel, motivation,
+    emergencyContact, emergencyPhone,
     memberStatus, // admin-only field
   } = body
 
@@ -94,6 +95,8 @@ export async function PATCH(req: Request, { params }: Params) {
     if (photo             !== undefined) memberData.photo             = photo || null
     if (sportLevel        !== undefined) memberData.sportLevel        = sportLevel || null
     if (motivation        !== undefined) memberData.motivation        = motivation || null
+    if (emergencyContact  !== undefined) memberData.emergencyContact  = emergencyContact || null
+    if (emergencyPhone    !== undefined) memberData.emergencyPhone    = emergencyPhone || null
     if (isAdmin && memberStatus !== undefined) memberData.status      = memberStatus
 
     // Lire le statut actuel avant mise à jour (pour détecter la transition → ACTIVE)

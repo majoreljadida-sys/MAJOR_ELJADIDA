@@ -97,6 +97,10 @@ export default function MemberProfilePage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!form.emergencyContact.trim() || !form.emergencyPhone.trim()) {
+      toast.error('Le contact d\'urgence (nom + téléphone) est obligatoire.')
+      return
+    }
     setLoading(true)
     try {
       const res = await fetch(`/api/members/${session?.user?.profileId}`, {
@@ -304,19 +308,24 @@ export default function MemberProfilePage() {
 
         {/* Emergency contact */}
         <div className="card-dark">
-          <div className="flex items-center gap-2 mb-5">
+          <div className="flex items-center gap-2 mb-2">
             <Shield size={18} className="text-major-accent" />
-            <h2 className="font-oswald text-white text-lg uppercase tracking-wide">Contact d'urgence</h2>
+            <h2 className="font-oswald text-white text-lg uppercase tracking-wide">
+              Contact d'urgence <span className="text-red-400">*</span>
+            </h2>
           </div>
+          <p className="text-gray-500 text-xs font-inter mb-4">
+            Personne à prévenir en cas de problème pendant un entraînement ou une course. Obligatoire.
+          </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="form-label">Nom</label>
-              <input className="input-dark" placeholder="Nom du contact"
+              <label className="form-label">Nom complet *</label>
+              <input className="input-dark" placeholder="Ex : Fatima Baskoun" required
                 value={form.emergencyContact} onChange={e => set('emergencyContact', e.target.value)} />
             </div>
             <div>
-              <label className="form-label">Téléphone</label>
-              <input type="tel" className="input-dark" placeholder="+212 6XX XXX XXX"
+              <label className="form-label">Téléphone *</label>
+              <input type="tel" className="input-dark" placeholder="+212 6XX XXX XXX" required
                 value={form.emergencyPhone} onChange={e => set('emergencyPhone', e.target.value)} />
             </div>
           </div>

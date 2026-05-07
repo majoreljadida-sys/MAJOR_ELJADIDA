@@ -149,6 +149,11 @@ model Member {
   // Objectif personnel / motivation du coureur (cf. enum MotivationGoal).
   // Remplace l'usage de `category` dans les formulaires utilisateur.
   motivation     MotivationGoal?
+  // Contact d'urgence — obligatoire à l'inscription (depuis 2026-05).
+  // Nullable côté DB pour ne pas casser les membres antérieurs ;
+  // l'admin pourra leur demander de compléter.
+  emergencyContact String?
+  emergencyPhone   String?
   licenseNumber  String?             @unique
   groupId        String?
   group          TrainingGroup?      @relation(fields: [groupId], references: [id])
