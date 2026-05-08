@@ -34,6 +34,15 @@ export default async function AdminStatsPage() {
     select: { observedAt: true, distance: true, type: true },
   })
 
+  // ── Visites du site sur 30 jours ────────────────────────────
+  const since30 = new Date()
+  since30.setDate(since30.getDate() - 29)
+  since30.setHours(0, 0, 0, 0)
+  const pageViews = await prisma.pageView.findMany({
+    where:  { viewedAt: { gte: since30 } },
+    select: { viewedAt: true, path: true },
+  })
+
   // ── Totaux globaux ──────────────────────────────────────────
   const totalMembers       = await prisma.member.count()
   const activeMembers      = await prisma.member.count({ where: { status: 'ACTIVE' } })
@@ -117,6 +126,39 @@ export default async function AdminStatsPage() {
     .filter(l => l.motivation !== null)
     .map(l => ({ motivation: l.motivation as string, nombre: l._count._all }))
 
+  // ── Visites par jour (30 derniers jours) ──────────────────
+  function dayKey(d: Date) {
+    return d.toISOString().slice(0, 10)  // "YYYY-MM-DD"
+  }
+  function dayLabel(d: Date) {
+    return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
+  }
+  const daysArr: { key: string; label: string }[] = []
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(since30); d.setDate(d.getDate() + i)
+    daysArr.push({ key: dayKey(d), label: dayLabel(d) })
+  }
+  const viewsPerDay: Record<string, number> = {}
+  for (const v of pageViews) {
+    const k = dayKey(v.viewedAt)
+    viewsPerDay[k] = (viewsPerDay[k] ?? 0) + 1
+  }
+  const visitsData = daysArr.map(d => ({
+    jour:  d.label,
+    vues:  viewsPerDay[d.key] ?? 0,
+  }))
+  const totalViews30 = pageViews.length
+
+  // Top pages (30 derniers jours)
+  const pathCount: Record<string, number> = {}
+  for (const v of pageViews) {
+    pathCount[v.path] = (pathCount[v.path] ?? 0) + 1
+  }
+  const topPages = Object.entries(pathCount)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([path, count]) => ({ path, count }))
+
   return (
     <StatsClient
       adhesionsData={adhesionsData}
@@ -124,6 +166,9 @@ export default async function AdminStatsPage() {
       stravaData={stravaData}
       levelsData={levelsData}
       motivationsData={motivationsData}
+      visitsData={visitsData}
+      topPages={topPages}
+      totalViews30={totalViews30}
       totals={{
         members: totalMembers,
         active:  activeMembers,

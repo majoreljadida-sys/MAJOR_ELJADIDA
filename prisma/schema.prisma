@@ -180,6 +180,22 @@ enum MotivationGoal {
   RACE_PREP     // Préparation course (10 km, semi, marathon)
 }
 
+// Compteur de visites maison — enregistre chaque page vue côté client
+// pour afficher la tendance quotidienne sur /admin/stats. Pas d'ID
+// utilisateur (anonyme), juste path + date + pays optionnel (header
+// x-vercel-ip-country) + referer optionnel.
+model PageView {
+  id        String   @id @default(cuid())
+  path      String              // ex. "/strava", "/entrainements"
+  country   String?             // code pays (ex. "MA", "FR")
+  referer   String?             // domaine source (ex. "google.com")
+  viewedAt  DateTime @default(now())
+
+  @@index([viewedAt])
+  @@index([path])
+  @@map("page_views")
+}
+
 // Mirroir local des activités du club Strava — Strava ne retourne pas la
 // date des activités via son API publique des clubs, donc on les capture
 // nous-mêmes au fil de l'eau (cron horaire) pour pouvoir filtrer "cette

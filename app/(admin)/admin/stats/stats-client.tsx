@@ -4,7 +4,7 @@ import {
   ResponsiveContainer, AreaChart, Area, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell,
 } from 'recharts'
-import { Users, UserPlus, CreditCard, TrendingUp, Activity, Target } from 'lucide-react'
+import { Users, UserPlus, CreditCard, TrendingUp, Activity, Target, Eye, Globe } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import { SPORT_LEVELS } from '@/lib/sport-levels'
 import { MOTIVATIONS } from '@/lib/motivations'
@@ -15,6 +15,9 @@ interface Props {
   stravaData:      { mois: string; km: number }[]
   levelsData:      { niveau: string; nombre: number }[]
   motivationsData: { motivation: string; nombre: number }[]
+  visitsData:      { jour: string; vues: number }[]
+  topPages:        { path: string; count: number }[]
+  totalViews30:    number
   totals: { members: number; active: number; pending: number; revenue: number }
 }
 
@@ -32,7 +35,8 @@ const MOTIVATION_COLORS: Record<string, string> = {
 }
 
 export function StatsClient({
-  adhesionsData, paymentsData, stravaData, levelsData, motivationsData, totals,
+  adhesionsData, paymentsData, stravaData, levelsData, motivationsData,
+  visitsData, topPages, totalViews30, totals,
 }: Props) {
   return (
     <div className="p-8 max-w-7xl">
@@ -45,11 +49,12 @@ export function StatsClient({
       </div>
 
       {/* ── KPIs globaux ─────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <KPI icon={Users}     label="Membres total"  value={totals.members}            color="text-major-accent" />
-        <KPI icon={UserPlus}  label="Membres actifs" value={totals.active}             color="text-emerald-400"  />
-        <KPI icon={Activity}  label="En attente"     value={totals.pending}            color="text-amber-400"    />
-        <KPI icon={CreditCard} label="Revenu encaissé" value={formatCurrency(totals.revenue, 'MAD')} color="text-major-cyan" small />
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <KPI icon={Users}      label="Membres total"   value={totals.members} color="text-major-accent" />
+        <KPI icon={UserPlus}   label="Membres actifs"  value={totals.active}  color="text-emerald-400"  />
+        <KPI icon={Activity}   label="En attente"      value={totals.pending} color="text-amber-400"    />
+        <KPI icon={CreditCard} label="Revenu encaissé" value={formatCurrency(totals.revenue, 'MAD')} color="text-major-cyan"  small />
+        <KPI icon={Eye}        label="Visites 30j"     value={totalViews30.toLocaleString('fr-FR')}  color="text-cyan-400" />
       </div>
 
       {/* ── Adhésions sur 12 mois ────────────────────────────── */}
@@ -184,17 +189,64 @@ export function StatsClient({
         </Card>
       </div>
 
+      {/* ── Visites du site (30 derniers jours) ────────────── */}
+      <Card title={`Visites du site — 30 derniers jours (${totalViews30.toLocaleString('fr-FR')} vues)`} icon={Eye} className="mt-6">
+        <ResponsiveContainer width="100%" height={250}>
+          <AreaChart data={visitsData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+            <defs>
+              <linearGradient id="g-visits" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"  stopColor="#06b6d4" stopOpacity={0.6} />
+                <stop offset="100%" stopColor="#06b6d4" stopOpacity={0.0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+            <XAxis dataKey="jour" stroke="#6b7280" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
+            <YAxis stroke="#6b7280" tick={{ fontSize: 11 }} allowDecimals={false} />
+            <Tooltip contentStyle={tooltipStyle} />
+            <Area type="monotone" dataKey="vues" name="Pages vues" stroke="#06b6d4" strokeWidth={2} fill="url(#g-visits)" />
+          </AreaChart>
+        </ResponsiveContainer>
+      </Card>
+
+      {/* Top pages */}
+      <Card title="Pages les plus consultées (30 jours)" icon={Globe} className="mt-6">
+        {topPages.length === 0 ? (
+          <p className="text-gray-500 text-sm font-inter text-center py-6">
+            Pas encore de visites enregistrées. Les statistiques se rempliront au fil du trafic.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {topPages.map((p, i) => {
+              const max = topPages[0].count || 1
+              const pct = Math.round((p.count / max) * 100)
+              return (
+                <div key={p.path} className="flex items-center gap-3">
+                  <span className="text-gray-500 text-xs font-inter font-mono w-6 text-right">#{i + 1}</span>
+                  <div className="flex-1 min-w-0 relative h-7 bg-major-black/40 rounded overflow-hidden">
+                    <div className="absolute inset-y-0 left-0 bg-major-cyan/30 rounded"
+                      style={{ width: `${pct}%` }} />
+                    <div className="relative px-3 h-full flex items-center text-xs font-inter">
+                      <span className="text-white truncate font-mono">{p.path}</span>
+                    </div>
+                  </div>
+                  <span className="text-major-cyan font-oswald font-bold text-sm w-12 text-right">{p.count}</span>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </Card>
+
       {/* Note Vercel Analytics */}
       <div className="mt-8 p-4 bg-major-surface border border-major-primary/20 rounded-xl">
         <p className="text-gray-400 text-xs font-inter leading-relaxed">
-          📈 <b className="text-white">Audience du site</b> (visiteurs, pages vues, sources) :
-          consultable directement sur Vercel →{' '}
+          📈 <b className="text-white">Stats avancées</b> (sources, devices, pays détaillés) :
+          consultable sur Vercel →{' '}
           <a href="https://vercel.com/majoreljadida-sys-projects/major-eljadida/analytics"
             target="_blank" rel="noopener noreferrer"
             className="text-major-accent hover:text-major-cyan underline">
             Analytics
           </a>
-          {' '}— activé sur la prod via @vercel/analytics.
         </p>
       </div>
     </div>
