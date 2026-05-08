@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowRight, Heart, Shield, Users, Zap, ChevronRight, MapPin, Clock, BookOpen, MessageCircle, Eye } from 'lucide-react'
+import { useSession } from 'next-auth/react'
+import { ArrowRight, Heart, Shield, Users, Zap, ChevronRight, MapPin, Clock, BookOpen, MessageCircle, Eye, LayoutDashboard } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n/context'
 import { HymneWidget } from '@/components/hymne/hymne-widget'
 import { DynamicLogo } from '@/components/dynamic-logo'
@@ -27,6 +28,14 @@ interface Props {
 
 export function HomeContent({ events, posts }: Props) {
   const { t } = useLanguage()
+  const { data: session } = useSession()
+  const isAuthed = Boolean(session?.user)
+  const dashboardHref = (() => {
+    const role = session?.user?.role
+    if (role === 'ADMIN') return '/admin/dashboard'
+    if (role === 'COACH') return '/coach/trainings'
+    return '/member/dashboard'
+  })()
 
   return (
     <>
@@ -63,10 +72,18 @@ export function HomeContent({ events, posts }: Props) {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 animate-fade-up animate-delay-500">
-            <Link href="/register" className="btn-primary text-base px-8 py-3.5 group">
-              {t.home.hero.cta1}
-              <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-            </Link>
+            {isAuthed ? (
+              <Link href={dashboardHref} className="btn-primary text-base px-8 py-3.5 group">
+                <LayoutDashboard size={18} />
+                {t.home.hero.ctaDashboard}
+                <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+              </Link>
+            ) : (
+              <Link href="/register" className="btn-primary text-base px-8 py-3.5 group">
+                {t.home.hero.cta1}
+                <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+              </Link>
+            )}
             <Link href="/events" className="btn-secondary text-base px-8 py-3.5">
               {t.home.hero.cta2}
             </Link>
@@ -144,9 +161,15 @@ export function HomeContent({ events, posts }: Props) {
             ))}
           </div>
           <div className="text-center mt-10">
-            <Link href="/register" className="btn-primary">
-              {t.home.hero.cta1} <ArrowRight size={16} />
-            </Link>
+            {isAuthed ? (
+              <Link href="/entrainements" className="btn-primary">
+                {t.home.hero.ctaProgramme} <ArrowRight size={16} />
+              </Link>
+            ) : (
+              <Link href="/register" className="btn-primary">
+                {t.home.hero.cta1} <ArrowRight size={16} />
+              </Link>
+            )}
           </div>
         </div>
       </section>
@@ -275,26 +298,28 @@ export function HomeContent({ events, posts }: Props) {
         </div>
       </section>
 
-      {/* ═══ CTA FINAL ════════════════════════════════════════════ */}
-      <section className="relative py-28 px-4 overflow-hidden bg-cta-gradient">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-major-cyan/5 rounded-full blur-3xl" />
-        <div className="max-w-4xl mx-auto text-center relative z-10">
-          <h2 className="font-bebas text-6xl sm:text-7xl text-white tracking-widest mb-4">
-            {t.home.cta.title}
-          </h2>
-          <p className="font-inter text-gray-300 text-lg mb-8 max-w-xl mx-auto">
-            {t.home.cta.desc}
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/register" className="btn-primary text-base px-10 py-4 group">
-              {t.home.cta.btn1} <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-            </Link>
-            <Link href="/contact" className="btn-secondary text-base px-10 py-4">
-              {t.home.cta.btn2}
-            </Link>
+      {/* ═══ CTA FINAL — masqué si connecté ════════════════════════ */}
+      {!isAuthed && (
+        <section className="relative py-28 px-4 overflow-hidden bg-cta-gradient">
+          <div className="absolute top-0 right-0 w-80 h-80 bg-major-cyan/5 rounded-full blur-3xl" />
+          <div className="max-w-4xl mx-auto text-center relative z-10">
+            <h2 className="font-bebas text-6xl sm:text-7xl text-white tracking-widest mb-4">
+              {t.home.cta.title}
+            </h2>
+            <p className="font-inter text-gray-300 text-lg mb-8 max-w-xl mx-auto">
+              {t.home.cta.desc}
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/register" className="btn-primary text-base px-10 py-4 group">
+                {t.home.cta.btn1} <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <Link href="/contact" className="btn-secondary text-base px-10 py-4">
+                {t.home.cta.btn2}
+              </Link>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
     </>
   )
 }

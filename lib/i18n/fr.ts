@@ -31,6 +31,8 @@ const fr = {
       desc:      'MAJOR est une association à but non lucratif fondée par des passionnés de course à pied à El Jadida. Notre ambiance festive et fraternelle — résumée dans notre cri de ralliement — est la meilleure raison de chausser ses baskets.',
       cta1:      'Rejoindre le club',
       cta2:      'Voir les événements',
+      ctaDashboard:    'Mon tableau de bord',
+      ctaProgramme:    'Voir mon programme',
     },
     stats: {
       members:   'Membres actifs',
