@@ -4,6 +4,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowRight, Heart, Shield, Users, Zap, ChevronRight, MapPin, Clock, BookOpen, MessageCircle, Eye } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n/context'
+import { HymneWidget } from '@/components/hymne/hymne-widget'
+import { DynamicLogo } from '@/components/dynamic-logo'
 import { formatDate, EVENT_TYPE_LABELS, getEventTypeColor } from '@/lib/utils'
 import type { Event, BlogPost, BlogCategory } from '@prisma/client'
 
@@ -34,6 +36,10 @@ export function HomeContent({ events, posts }: Props) {
         <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-major-black to-transparent" />
 
         <div className="relative z-10 flex flex-col items-center max-w-4xl mx-auto">
+          <div className="animate-fade-up animate-delay-100 mb-10">
+            <DynamicLogo size={240} />
+          </div>
+
           <span className="font-inter text-major-cyan text-sm font-medium tracking-[0.35em] uppercase mb-3 animate-fade-up animate-delay-100">
             {t.home.hero.subtitle}
           </span>
@@ -69,6 +75,7 @@ export function HomeContent({ events, posts }: Props) {
               <MessageCircle size={18} className="text-major-accent group-hover:scale-110 transition-transform" />
               {t.nav.coach}
             </Link>
+            <HymneWidget />
           </div>
         </div>
 
