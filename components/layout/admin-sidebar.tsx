@@ -7,6 +7,7 @@ import {
   LayoutDashboard, Users, Calendar, Trophy, CreditCard,
   Bell, Settings, LogOut, ChevronRight, BookOpen,
   Activity, Shield, ExternalLink, Menu, X, User as UserIcon,
+  TrendingUp,
 } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
 import { initials } from '@/lib/utils'
@@ -23,6 +24,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { href: '/admin/dashboard', icon: LayoutDashboard, label: 'Tableau de bord' },
+  { href: '/admin/stats',     icon: TrendingUp,      label: 'Statistiques'    },
   { href: '/admin/members',   icon: Users,           label: 'Adhérents'       },
   { href: '/admin/trainings', icon: Activity,        label: 'Entraînements'   },
   { href: '/admin/programs',  icon: Calendar,        label: 'Programmes'      },

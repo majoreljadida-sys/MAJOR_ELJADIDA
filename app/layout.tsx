@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Toaster } from 'react-hot-toast'
 import { SessionProvider } from 'next-auth/react'
+import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -38,6 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="bg-major-black text-white font-inter antialiased">
         <SessionProvider>
           {children}
+          <Analytics />
           <Toaster
             position="top-right"
             toastOptions={{
