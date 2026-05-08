@@ -11,6 +11,7 @@ import {
   hasAnyLevelContent,
 } from '@/lib/sport-levels'
 import { VMACalculator } from '@/components/vma-calculator'
+import { CalendarSubscribe } from '@/components/calendar-subscribe'
 
 const MONTHS_FR = [
   '', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
@@ -263,6 +264,11 @@ export function TrainingProgramContent({
         {/* ── Calculateur VMA ─────────────────────────────────────── */}
         <div className="mb-6">
           <VMACalculator memberId={userMemberId ?? null} />
+        </div>
+
+        {/* ── Abonnement au calendrier .ics ───────────────────────── */}
+        <div className="mb-6 flex justify-end">
+          <CalendarSubscribe level={selectedLevel?.jsonKey ?? null} />
         </div>
 
         {/* Sélecteur de mois */}
