@@ -63,7 +63,7 @@ export async function PATCH(req: Request, { params }: Params) {
     firstName, lastName, phone,
     city, tshirtSize, category,
     cin, dateOfBirth, photo,
-    sportLevel, motivation,
+    sportLevel, motivations,
     emergencyContact, emergencyPhone,
     memberStatus, // admin-only field
   } = body
@@ -74,11 +74,15 @@ export async function PATCH(req: Request, { params }: Params) {
     if (!VALID.includes(sportLevel))
       return NextResponse.json({ error: 'Niveau sportif invalide.' }, { status: 400 })
   }
-  // Validation de l'objectif personnel
-  if (motivation !== undefined && motivation !== null && motivation !== '') {
+  // Validation des objectifs personnels (tableau, ≥ 1 si fourni non-vide)
+  let cleanedMotivations: string[] | undefined
+  if (motivations !== undefined) {
+    if (!Array.isArray(motivations))
+      return NextResponse.json({ error: 'motivations doit être un tableau.' }, { status: 400 })
     const VALID = ['HEALTH', 'WEIGHT_LOSS', 'PERFORMANCE', 'RACE_PREP']
-    if (!VALID.includes(motivation))
-      return NextResponse.json({ error: 'Objectif invalide.' }, { status: 400 })
+    cleanedMotivations = Array.from(new Set(motivations as string[]))
+    if (!cleanedMotivations.every(m => VALID.includes(m)))
+      return NextResponse.json({ error: 'Objectif(s) invalide(s).' }, { status: 400 })
   }
 
   try {
@@ -94,7 +98,7 @@ export async function PATCH(req: Request, { params }: Params) {
     if (dateOfBirth       !== undefined) memberData.dateOfBirth       = dateOfBirth ? new Date(dateOfBirth) : null
     if (photo             !== undefined) memberData.photo             = photo || null
     if (sportLevel        !== undefined) memberData.sportLevel        = sportLevel || null
-    if (motivation        !== undefined) memberData.motivation        = motivation || null
+    if (cleanedMotivations !== undefined) memberData.motivations      = cleanedMotivations as any
     if (emergencyContact  !== undefined) memberData.emergencyContact  = emergencyContact || null
     if (emergencyPhone    !== undefined) memberData.emergencyPhone    = emergencyPhone || null
     if (isAdmin && memberStatus !== undefined) memberData.status      = memberStatus

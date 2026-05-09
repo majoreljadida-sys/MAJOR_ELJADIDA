@@ -22,8 +22,17 @@ export default function MemberProfilePage() {
     emergencyContact: '', emergencyPhone: '', bio: '',
     cin: '', dateOfBirth: '', photo: '',
     sportLevel: '' as '' | SportLevelKey,
-    motivation: '' as '' | MotivationKey,
+    motivations: [] as MotivationKey[],
   })
+
+  function toggleMotivation(key: MotivationKey) {
+    setForm(f => ({
+      ...f,
+      motivations: f.motivations.includes(key)
+        ? f.motivations.filter(k => k !== key)
+        : [...f.motivations, key],
+    }))
+  }
   const [photoUploading, setPhotoUploading] = useState(false)
 
   useEffect(() => {
@@ -46,7 +55,7 @@ export default function MemberProfilePage() {
             dateOfBirth: member.dateOfBirth ? new Date(member.dateOfBirth).toISOString().split('T')[0] : '',
             photo: member.photo ?? '',
             sportLevel: member.sportLevel ?? '',
-            motivation: member.motivation ?? '',
+            motivations: Array.isArray(member.motivations) ? member.motivations : [],
           })
           if (member.medicalCertUrl) setCertUrl(member.medicalCertUrl)
           if (member.medicalCertExpiry) setCertExpiry(new Date(member.medicalCertExpiry).toISOString().split('T')[0])
@@ -99,6 +108,10 @@ export default function MemberProfilePage() {
     e.preventDefault()
     if (!form.emergencyContact.trim() || !form.emergencyPhone.trim()) {
       toast.error('Le contact d\'urgence (nom + téléphone) est obligatoire.')
+      return
+    }
+    if (form.motivations.length === 0) {
+      toast.error('Sélectionnez au moins un objectif personnel.')
       return
     }
     setLoading(true)
@@ -213,22 +226,22 @@ export default function MemberProfilePage() {
             <h2 className="font-oswald text-white text-lg uppercase tracking-wide">Informations sportives</h2>
           </div>
 
-          {/* Objectif personnel / motivation */}
+          {/* Objectifs personnels / motivations (multi-choix, ≥ 1 obligatoire) */}
           <div className="mb-4">
             <label className="form-label flex items-center gap-1.5">
-              <Target size={13} /> Objectif personnel
+              <Target size={13} /> Objectif(s) personnel(s) <span className="text-red-400">*</span>
             </label>
             <p className="text-gray-500 text-[11px] font-inter mb-2.5">
-              Qu'est-ce qui vous motive à courir ? Vous pouvez le mettre à jour si votre projet évolue.
+              Qu'est-ce qui vous motive à courir ? Cochez un ou plusieurs objectifs.
             </p>
             <div className="space-y-2">
               {MOTIVATIONS.map(def => {
-                const active = form.motivation === def.key
+                const active = form.motivations.includes(def.key)
                 return (
                   <button
                     key={def.key}
                     type="button"
-                    onClick={() => setForm(f => ({ ...f, motivation: def.key }))}
+                    onClick={() => toggleMotivation(def.key)}
                     className={`w-full text-left rounded-xl border p-3 transition-all ${
                       active
                         ? `${def.cardBg} ${def.cardBorder} ring-2 ${def.ring}`
@@ -250,6 +263,11 @@ export default function MemberProfilePage() {
                 )
               })}
             </div>
+            {form.motivations.length > 0 && (
+              <p className="text-major-accent text-[11px] font-inter mt-2">
+                {form.motivations.length} objectif{form.motivations.length > 1 ? 's' : ''} sélectionné{form.motivations.length > 1 ? 's' : ''}
+              </p>
+            )}
           </div>
 
           {/* Niveau sportif */}

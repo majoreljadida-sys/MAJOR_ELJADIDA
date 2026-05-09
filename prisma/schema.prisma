@@ -146,9 +146,14 @@ model Member {
   // créés avant le déploiement de cette feature ; obligatoire dans le
   // formulaire d'inscription pour tous les nouveaux membres.
   sportLevel     SportLevel?
-  // Objectif personnel / motivation du coureur (cf. enum MotivationGoal).
-  // Remplace l'usage de `category` dans les formulaires utilisateur.
+  // Objectif personnel — DEPRECATED, conservé temporairement pour migration.
+  // Lire `motivations` (array) à la place. Sera supprimé après migration.
   motivation     MotivationGoal?
+  // Objectifs personnels / motivations du coureur (cf. enum MotivationGoal).
+  // Multi-sélection : un coureur peut combiner plusieurs objectifs (santé +
+  // perte de poids, ou perf + prépa course, etc.). Obligatoire au formulaire
+  // d'inscription (au moins 1).
+  motivations    MotivationGoal[] @default([])
   // Contact d'urgence — obligatoire à l'inscription (depuis 2026-05).
   // Nullable côté DB pour ne pas casser les membres antérieurs ;
   // l'admin pourra leur demander de compléter.

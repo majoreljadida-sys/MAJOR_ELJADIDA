@@ -9,21 +9,23 @@ export async function POST(req: Request) {
     const body = await req.json()
     const { firstName, lastName, email, phone, password, birthDate, cin, city,
             tshirtSize, photo, medicalCertUrl, medicalCertExpiry,
-            sportLevel, motivation,
+            sportLevel, motivations,
             emergencyContact, emergencyPhone } = body
 
+    const motivationsArr: string[] = Array.isArray(motivations) ? motivations : []
+
     const missing: string[] = []
-    if (!firstName)        missing.push('firstName')
-    if (!lastName)         missing.push('lastName')
-    if (!email)            missing.push('email')
-    if (!phone)            missing.push('phone')
-    if (!birthDate)        missing.push('birthDate')
-    if (!cin)              missing.push('cin')
-    if (!password)         missing.push('password')
-    if (!sportLevel)       missing.push('sportLevel')
-    if (!motivation)       missing.push('motivation')
-    if (!emergencyContact) missing.push('emergencyContact')
-    if (!emergencyPhone)   missing.push('emergencyPhone')
+    if (!firstName)            missing.push('firstName')
+    if (!lastName)             missing.push('lastName')
+    if (!email)                missing.push('email')
+    if (!phone)                missing.push('phone')
+    if (!birthDate)            missing.push('birthDate')
+    if (!cin)                  missing.push('cin')
+    if (!password)             missing.push('password')
+    if (!sportLevel)           missing.push('sportLevel')
+    if (motivationsArr.length === 0) missing.push('motivations')
+    if (!emergencyContact)     missing.push('emergencyContact')
+    if (!emergencyPhone)       missing.push('emergencyPhone')
     if (missing.length > 0)
       return NextResponse.json({ error: `Champs obligatoires manquants : ${missing.join(', ')}.` }, { status: 400 })
 
@@ -32,8 +34,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Niveau sportif invalide.' }, { status: 400 })
 
     const VALID_MOTIVATIONS = ['HEALTH', 'WEIGHT_LOSS', 'PERFORMANCE', 'RACE_PREP'] as const
-    if (!VALID_MOTIVATIONS.includes(motivation))
-      return NextResponse.json({ error: 'Objectif invalide.' }, { status: 400 })
+    const cleanedMotivations = Array.from(new Set(motivationsArr))
+    if (!cleanedMotivations.every(m => VALID_MOTIVATIONS.includes(m as any)))
+      return NextResponse.json({ error: 'Objectif(s) invalide(s).' }, { status: 400 })
 
     if (password.length < 8)
       return NextResponse.json({ error: 'Mot de passe trop court.' }, { status: 400 })
@@ -62,7 +65,7 @@ export async function POST(req: Request) {
             placeOfBirth:  city || null,
             tshirtSize:        tshirtSize || 'M',
             sportLevel,
-            motivation,
+            motivations:       cleanedMotivations as any,
             emergencyContact:  emergencyContact.trim(),
             emergencyPhone:    emergencyPhone.trim(),
             medicalCertUrl:    medicalCertUrl    || null,

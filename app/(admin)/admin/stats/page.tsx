@@ -18,7 +18,7 @@ export default async function AdminStatsPage() {
   // ── Adhésions par mois ──────────────────────────────────────
   const members = await prisma.member.findMany({
     where:  { createdAt: { gte: start } },
-    select: { createdAt: true, status: true, sportLevel: true, motivation: true },
+    select: { createdAt: true, status: true, sportLevel: true, motivations: true },
     orderBy: { createdAt: 'asc' },
   })
 
@@ -117,14 +117,19 @@ export default async function AdminStatsPage() {
     .filter(l => l.sportLevel !== null)
     .map(l => ({ niveau: l.sportLevel as string, nombre: l._count._all }))
 
-  // Répartition par objectif
-  const motivationsCount = await prisma.member.groupBy({
-    by:       ['motivation'],
-    _count:   { _all: true },
+  // Répartition par objectif (un membre peut compter dans plusieurs catégories)
+  const allMembersForMotiv = await prisma.member.findMany({
+    select: { motivations: true },
   })
-  const motivationsData = motivationsCount
-    .filter(l => l.motivation !== null)
-    .map(l => ({ motivation: l.motivation as string, nombre: l._count._all }))
+  const motivCounts: Record<string, number> = {}
+  for (const m of allMembersForMotiv) {
+    for (const k of m.motivations ?? []) {
+      motivCounts[k] = (motivCounts[k] ?? 0) + 1
+    }
+  }
+  const motivationsData = Object.entries(motivCounts).map(([motivation, nombre]) => ({
+    motivation, nombre,
+  }))
 
   // ── Visites par jour (30 derniers jours) ──────────────────
   function dayKey(d: Date) {

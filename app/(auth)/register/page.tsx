@@ -110,9 +110,18 @@ export default function RegisterPage() {
     birthDate: '', cin: '', city: 'El Jadida', tshirtSize: 'M',
     photo: '',
     sportLevel: '' as '' | SportLevelKey,
-    motivation: '' as '' | MotivationKey,
+    motivations: [] as MotivationKey[],
     emergencyContact: '', emergencyPhone: '',
   })
+
+  function toggleMotivation(key: MotivationKey) {
+    setForm(f => ({
+      ...f,
+      motivations: f.motivations.includes(key)
+        ? f.motivations.filter(k => k !== key)
+        : [...f.motivations, key],
+    }))
+  }
   const [photoUploading, setPhotoUploading] = useState(false)
 
   function set(k: string, v: string) { setForm(f => ({ ...f, [k]: v })) }
@@ -138,7 +147,7 @@ export default function RegisterPage() {
 
   async function handleSubmit() {
     if (!approved) { setError('Vous devez approuver la charte pour continuer.'); return }
-    if (!form.motivation) { setError('Veuillez choisir votre objectif personnel (étape 2).'); setStep(2); return }
+    if (form.motivations.length === 0) { setError('Veuillez choisir au moins un objectif personnel (étape 2).'); setStep(2); return }
     if (!form.sportLevel) { setError('Veuillez choisir votre niveau sportif (étape 2).'); setStep(2); return }
     setLoading(true)
     setError('')
@@ -370,22 +379,22 @@ export default function RegisterPage() {
               <p className="text-gray-500 text-[11px] font-inter mt-1.5">Photo visible par toi, le coach et l'admin. Max 5 MB.</p>
             </div>
 
-            {/* ── Objectif personnel / motivation (obligatoire) ── */}
+            {/* ── Objectifs personnels / motivations (obligatoire — multi-choix) ── */}
             <div>
               <label className="form-label">
-                Objectif personnel <span className="text-red-400">*</span>
+                Objectif(s) personnel(s) <span className="text-red-400">*</span>
               </label>
               <p className="text-gray-500 text-[11px] font-inter mb-2.5">
-                Qu'est-ce qui vous motive à courir ? Cela nous aide à orienter votre coaching.
+                Qu'est-ce qui vous motive à courir ? Cochez un ou plusieurs objectifs — cela nous aide à orienter votre coaching.
               </p>
               <div className="space-y-2">
                 {MOTIVATIONS.map(def => {
-                  const active = form.motivation === def.key
+                  const active = form.motivations.includes(def.key)
                   return (
                     <button
                       key={def.key}
                       type="button"
-                      onClick={() => setForm(f => ({ ...f, motivation: def.key }))}
+                      onClick={() => toggleMotivation(def.key)}
                       className={`w-full text-left rounded-xl border p-3 transition-all ${
                         active
                           ? `${def.cardBg} ${def.cardBorder} ring-2 ${def.ring}`
@@ -407,6 +416,11 @@ export default function RegisterPage() {
                   )
                 })}
               </div>
+              {form.motivations.length > 0 && (
+                <p className="text-major-accent text-[11px] font-inter mt-2">
+                  {form.motivations.length} objectif{form.motivations.length > 1 ? 's' : ''} sélectionné{form.motivations.length > 1 ? 's' : ''}
+                </p>
+              )}
             </div>
 
             <div>
@@ -469,7 +483,7 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={() => {
-                  if (!form.motivation) { setError('Veuillez choisir votre objectif personnel.'); return }
+                  if (form.motivations.length === 0) { setError('Veuillez choisir au moins un objectif personnel.'); return }
                   if (!form.sportLevel) { setError('Veuillez choisir votre niveau sportif.'); return }
                   setError(''); setStep(3)
                 }}

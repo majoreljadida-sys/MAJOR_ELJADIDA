@@ -86,3 +86,11 @@ export function getMotivation(key: string | null | undefined) {
   if (!key) return null
   return MOTIVATIONS.find(m => m.key === String(key).toUpperCase()) ?? null
 }
+
+/** Convertit un tableau de clés (issu de Member.motivations) en définitions ordonnées
+ *  selon l'ordre canonique de MOTIVATIONS. Renvoie un tableau vide si null/undefined. */
+export function getMotivations(keys: readonly string[] | null | undefined) {
+  if (!keys || keys.length === 0) return []
+  const set = new Set(keys.map(k => String(k).toUpperCase()))
+  return MOTIVATIONS.filter(m => set.has(m.key))
+}

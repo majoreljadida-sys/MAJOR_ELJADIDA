@@ -6,7 +6,7 @@ import { MemberActions } from './member-actions'
 import { MemberPhotoCell } from './member-photo-cell'
 import { ExportMembersButton } from './export-button'
 import { getLevel, SPORT_LEVELS } from '@/lib/sport-levels'
-import { getMotivation, MOTIVATIONS } from '@/lib/motivations'
+import { getMotivation, getMotivations, MOTIVATIONS } from '@/lib/motivations'
 
 interface Props { searchParams: { status?: string; search?: string; level?: string; goal?: string } }
 
@@ -17,7 +17,7 @@ export default async function AdminMembersPage({ searchParams }: Props) {
     where: {
       ...(status ? { status: status as any } : {}),
       ...(level  ? { sportLevel: level as any } : {}),
-      ...(goal   ? { motivation: goal as any } : {}),
+      ...(goal   ? { motivations: { has: goal as any } } : {}),
       ...(search ? {
         OR: [
           { firstName: { contains: search, mode: 'insensitive' } },
@@ -194,13 +194,19 @@ export default async function AdminMembersPage({ searchParams }: Props) {
                   </td>
                   <td>
                     {(() => {
-                      const mot = getMotivation(m.motivation)
-                      return mot ? (
-                        <span className={`inline-flex items-center gap-1 ${mot.chipBg} ${mot.chipText} text-xs font-inter font-semibold px-1.5 py-0.5 rounded`} title={mot.label}>
-                          <span>{mot.emoji}</span> {mot.short}
-                        </span>
-                      ) : (
-                        <span className="text-gray-600 text-xs italic">—</span>
+                      const mots = getMotivations(m.motivations)
+                      if (mots.length === 0)
+                        return <span className="text-gray-600 text-xs italic">—</span>
+                      return (
+                        <div className="flex flex-wrap gap-1">
+                          {mots.map(mot => (
+                            <span key={mot.key}
+                              className={`inline-flex items-center gap-1 ${mot.chipBg} ${mot.chipText} text-xs font-inter font-semibold px-1.5 py-0.5 rounded`}
+                              title={mot.label}>
+                              <span>{mot.emoji}</span> {mot.short}
+                            </span>
+                          ))}
+                        </div>
                       )
                     })()}
                   </td>
