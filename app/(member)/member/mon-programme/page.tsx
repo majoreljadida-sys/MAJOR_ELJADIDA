@@ -107,6 +107,15 @@ export default function MonProgrammePage() {
 
   return (
     <div className="p-8 max-w-5xl">
+      {/* Filigrane logo MAJOR — visible uniquement à l'impression */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/logo_major.png"
+        alt=""
+        aria-hidden="true"
+        className="print-watermark hidden print:block"
+      />
+
       <div className="mb-8 print:hidden">
         <h1 className="font-bebas text-4xl text-white tracking-widest">MON PROGRAMME PERSO</h1>
         <p className="text-gray-400 font-inter text-sm mt-1">
@@ -344,9 +353,30 @@ export default function MonProgrammePage() {
 
       <style jsx global>{`
         @media print {
+          @page { margin: 14mm; }
           body { background: white !important; color: black !important; }
           .print\\:hidden { display: none !important; }
           .card-dark { background: white !important; border: 1px solid #ddd !important; color: black !important; }
+          /* Filigrane MAJOR centré sur chaque page */
+          .print-watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 60vw;
+            max-width: 480px;
+            height: auto;
+            transform: translate(-50%, -50%);
+            opacity: 0.08;
+            z-index: 0;
+            pointer-events: none;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          /* Le contenu doit passer au-dessus du filigrane */
+          .card-dark, h1, h2, h3 { position: relative; z-index: 1; }
+        }
+        @media screen {
+          .print-watermark { display: none !important; }
         }
       `}</style>
     </div>
