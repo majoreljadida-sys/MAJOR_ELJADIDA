@@ -14,12 +14,12 @@ import {
 } from '@/lib/training-plan'
 
 const SESSION_CFG: Record<SessionType, { color: string; bg: string; border: string; icon: any; label: string }> = {
-  EF:           { color: 'text-blue-300',   bg: 'bg-blue-900/25',    border: 'border-blue-700/40',   icon: Activity, label: 'Endurance' },
-  VMA:          { color: 'text-orange-300', bg: 'bg-orange-900/25',  border: 'border-orange-700/40', icon: Zap,      label: 'Fractionné' },
-  SEUIL:        { color: 'text-yellow-300', bg: 'bg-yellow-900/25',  border: 'border-yellow-700/40', icon: Timer,    label: 'Seuil' },
-  SORTIE_LONGUE:{ color: 'text-purple-300', bg: 'bg-purple-900/25',  border: 'border-purple-700/40', icon: Map,      label: 'Sortie longue' },
-  RECUP:        { color: 'text-gray-300',   bg: 'bg-gray-900/30',    border: 'border-gray-700/40',   icon: Heart,    label: 'Récup' },
-  REVEIL:       { color: 'text-cyan-300',   bg: 'bg-cyan-900/25',    border: 'border-cyan-700/40',   icon: Sparkles, label: 'Réveil' },
+  EF:           { color: 'text-blue-400',   bg: 'bg-blue-900/30',    border: 'border-blue-700/40',   icon: Activity, label: 'Endurance' },
+  VMA:          { color: 'text-orange-400', bg: 'bg-orange-900/30',  border: 'border-orange-700/40', icon: Zap,      label: 'Fractionné' },
+  SEUIL:        { color: 'text-yellow-500', bg: 'bg-yellow-900/30',  border: 'border-yellow-700/40', icon: Timer,    label: 'Seuil' },
+  SORTIE_LONGUE:{ color: 'text-purple-400', bg: 'bg-purple-900/30',  border: 'border-purple-700/40', icon: Map,      label: 'Sortie longue' },
+  RECUP:        { color: 'text-gray-400',   bg: 'bg-gray-900/30',    border: 'border-gray-700/40',   icon: Heart,    label: 'Récup' },
+  REVEIL:       { color: 'text-cyan-500',   bg: 'bg-cyan-900/30',    border: 'border-cyan-700/40',   icon: Sparkles, label: 'Réveil' },
   COURSE:       { color: 'text-major-accent', bg: 'bg-major-primary/15', border: 'border-major-primary/50', icon: Flag, label: 'Course' },
 }
 
@@ -388,21 +388,21 @@ function PaceCard({ label, value, sub, accent }: { label: string; value: string;
     <div className={`rounded-xl border p-3 text-center ${
       accent
         ? 'bg-major-primary/15 border-major-primary/50'
-        : 'bg-major-black/40 border-gray-800'
+        : 'bg-major-surface border-gray-800'
     }`}>
-      <p className={`text-[10px] font-inter uppercase tracking-widest ${accent ? 'text-major-accent' : 'text-gray-500'}`}>
+      <p className={`text-[10px] font-inter uppercase tracking-widest ${accent ? 'text-major-accent' : 'text-gray-400'}`}>
         {label}
       </p>
       <p className="font-bebas text-xl text-white tracking-wider mt-1">{value}</p>
-      <p className="text-[10px] font-inter text-gray-500 mt-0.5">{sub}</p>
+      <p className="text-[10px] font-inter text-gray-400 mt-0.5">{sub}</p>
     </div>
   )
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-gray-800 bg-major-black/30 p-3">
-      <p className="text-[10px] font-inter uppercase tracking-widest text-gray-500">{label}</p>
+    <div className="rounded-xl border border-gray-800 bg-major-surface p-3">
+      <p className="text-[10px] font-inter uppercase tracking-widest text-gray-400">{label}</p>
       <p className="font-bebas text-xl text-major-accent tracking-wider mt-0.5">{value}</p>
     </div>
   )
