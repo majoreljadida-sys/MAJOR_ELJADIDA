@@ -6,15 +6,16 @@ import { usePathname } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import { Logo } from '@/components/ui/logo'
 import {
-  LayoutDashboard, User, CreditCard, Calendar, LogOut, ChevronRight, Menu, X,
+  LayoutDashboard, User, CreditCard, Calendar, LogOut, ChevronRight, Menu, X, Sparkles,
 } from 'lucide-react'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 
 const NAV = [
-  { href: '/member/dashboard', icon: LayoutDashboard, label: 'Tableau de bord' },
-  { href: '/member/profile',   icon: User,            label: 'Mon profil'       },
-  { href: '/member/payments',  icon: CreditCard,      label: 'Mes paiements'    },
-  { href: '/events',           icon: Calendar,        label: 'Événements'       },
+  { href: '/member/dashboard',     icon: LayoutDashboard, label: 'Tableau de bord' },
+  { href: '/member/profile',       icon: User,            label: 'Mon profil'       },
+  { href: '/member/mon-programme', icon: Sparkles,        label: 'Mon programme'    },
+  { href: '/member/payments',      icon: CreditCard,      label: 'Mes paiements'    },
+  { href: '/events',               icon: Calendar,        label: 'Événements'       },
 ]
 
 export function MemberSidebar() {
