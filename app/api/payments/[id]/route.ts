@@ -44,3 +44,21 @@ export async function PATCH(req: Request, { params }: Params) {
     return NextResponse.json({ error: 'Introuvable ou erreur' }, { status: 404 })
   }
 }
+
+/**
+ * DELETE — suppression définitive d'un paiement (admin only).
+ * Utilisé par la fiche membre pour corriger une erreur de saisie.
+ */
+export async function DELETE(_req: Request, { params }: Params) {
+  const session = await auth()
+  if (!session || session.user.role?.toLowerCase() !== 'admin')
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+
+  try {
+    await prisma.payment.delete({ where: { id: params.id } })
+    return NextResponse.json({ ok: true })
+  } catch (err) {
+    console.error('[PAYMENT DELETE]', err)
+    return NextResponse.json({ error: 'Paiement introuvable ou erreur.' }, { status: 404 })
+  }
+}

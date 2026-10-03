@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import {
   CheckCircle, AlertTriangle, Calendar, Wallet, Plus, Loader2, X,
+  RotateCcw, Trash2, Zap,
 } from 'lucide-react'
 import {
   computeDuesStatus, globalStatusColor, statusColor, statusLabel,
@@ -14,6 +15,7 @@ import {
 import { formatCurrency } from '@/lib/utils'
 
 interface Payment {
+  id:        string
   type:      string
   amount:    number
   status:    string
@@ -31,8 +33,9 @@ interface Props {
 
 export function DuesSection({ memberId, memberName, createdAt, payments }: Props) {
   const router = useRouter()
-  const [modal, setModal] = useState<null | DuesLine>(null)
-  const [saving, setSaving] = useState(false)
+  const [modal, setModal]     = useState<null | DuesLine>(null)
+  const [undoLine, setUndoLine] = useState<null | DuesLine>(null)
+  const [saving, setSaving]   = useState(false)
 
   const dues = useMemo(() => {
     const member = { id: memberId, createdAt: new Date(createdAt) }
@@ -85,6 +88,28 @@ export function DuesSection({ memberId, memberName, createdAt, payments }: Props
     }
   }
 
+  async function undoPayment(line: DuesLine) {
+    setSaving(true)
+    try {
+      if (line.paymentIds.length === 0) {
+        toast.error('Aucun paiement à retirer sur cette ligne.')
+        return
+      }
+      const results = await Promise.allSettled(
+        line.paymentIds.map(id => fetch(`/api/payments/${id}`, { method: 'DELETE' })),
+      )
+      const errors = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.ok))
+      if (errors.length) throw new Error(`${errors.length} paiement(s) non supprimé(s).`)
+      toast.success(`Paiement retiré : ${line.label}`)
+      setUndoLine(null)
+      router.refresh()
+    } catch (err: any) {
+      toast.error(err.message ?? 'Erreur lors du retrait.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const allLines: DuesLine[] = [dues.adhesion, ...dues.lines]
 
   return (
@@ -126,7 +151,10 @@ export function DuesSection({ memberId, memberName, createdAt, payments }: Props
           <tbody>
             {allLines.map(line => {
               const sc = statusColor(line.status)
-              const canPay = line.status === 'DUE' || (line.status === 'UPCOMING' && line.type === 'ADHESION')
+              // Un ligne peut être réglée tant qu'elle n'est pas BEFORE_JOIN
+              // et qu'elle n'est pas déjà PAID. UPCOMING = paiement anticipé.
+              const canPay   = (line.status === 'DUE' || line.status === 'UPCOMING') && line.amount > 0
+              const canUndo  = line.status === 'PAID' && line.paymentIds.length > 0
               return (
                 <tr key={line.key}>
                   <td>
@@ -154,19 +182,37 @@ export function DuesSection({ memberId, memberName, createdAt, payments }: Props
                     <span className={`inline-flex items-center gap-1 text-[11px] font-inter font-semibold px-2 py-0.5 rounded ${sc.bg} ${sc.text} border ${sc.border}`}>
                       {line.status === 'PAID' && <CheckCircle size={10} />}
                       {line.status === 'DUE'  && <AlertTriangle size={10} />}
+                      {line.status === 'UPCOMING' && <Zap size={10} />}
                       {statusLabel(line.status)}
                     </span>
                   </td>
                   <td className="text-right">
-                    {canPay ? (
+                    {canPay && (
                       <button
                         type="button"
                         onClick={() => setModal(line)}
-                        className="inline-flex items-center gap-1 bg-major-primary/15 hover:bg-major-primary/25 border border-major-primary/40 text-major-accent text-xs font-inter font-medium px-2.5 py-1 rounded-lg transition-colors"
+                        className={`inline-flex items-center gap-1 border text-xs font-inter font-medium px-2.5 py-1 rounded-lg transition-colors ${
+                          line.status === 'UPCOMING'
+                            ? 'bg-cyan-900/20 hover:bg-cyan-900/35 border-cyan-700/40 text-cyan-300'
+                            : 'bg-major-primary/15 hover:bg-major-primary/25 border-major-primary/40 text-major-accent'
+                        }`}
+                        title={line.status === 'UPCOMING' ? 'Paiement anticipé' : 'Marquer payé'}
                       >
-                        <Plus size={11} /> Marquer payé
+                        {line.status === 'UPCOMING' ? <Zap size={11} /> : <Plus size={11} />}
+                        {line.status === 'UPCOMING' ? 'Payer en avance' : 'Marquer payé'}
                       </button>
-                    ) : (
+                    )}
+                    {canUndo && (
+                      <button
+                        type="button"
+                        onClick={() => setUndoLine(line)}
+                        className="inline-flex items-center gap-1 bg-red-900/15 hover:bg-red-900/30 border border-red-700/40 text-red-400 text-xs font-inter font-medium px-2.5 py-1 rounded-lg transition-colors"
+                        title="Retirer le paiement (en cas d'erreur de saisie)"
+                      >
+                        <RotateCcw size={11} /> Retirer
+                      </button>
+                    )}
+                    {!canPay && !canUndo && (
                       <span className="text-gray-700 text-xs">—</span>
                     )}
                   </td>
@@ -179,6 +225,7 @@ export function DuesSection({ memberId, memberName, createdAt, payments }: Props
 
       <p className="text-gray-500 text-[11px] font-inter italic mt-3">
         Barème : adhésion annuelle {formatCurrency(ADHESION_AMOUNT, 'MAD')} + cotisation mensuelle {formatCurrency(COTISATION_MONTHLY_AMOUNT, 'MAD')} / mois, à partir de septembre.
+        Les mois à venir peuvent être payés en avance. Un paiement enregistré par erreur peut être retiré via le bouton rouge.
       </p>
 
       {/* Modal confirmation enregistrement */}
@@ -189,8 +236,10 @@ export function DuesSection({ memberId, memberName, createdAt, payments }: Props
                className="w-full max-w-md bg-major-black border border-major-primary/30 rounded-2xl shadow-2xl overflow-hidden">
             <div className="bg-green-gradient px-5 py-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Wallet size={18} className="text-white" />
-                <p className="font-bebas text-white text-base tracking-widest">ENREGISTRER PAIEMENT</p>
+                {modal.status === 'UPCOMING' ? <Zap size={18} className="text-white" /> : <Wallet size={18} className="text-white" />}
+                <p className="font-bebas text-white text-base tracking-widest">
+                  {modal.status === 'UPCOMING' ? 'PAIEMENT ANTICIPÉ' : 'ENREGISTRER PAIEMENT'}
+                </p>
               </div>
               {!saving && (
                 <button onClick={() => setModal(null)} aria-label="Fermer"
@@ -212,8 +261,16 @@ export function DuesSection({ memberId, memberName, createdAt, payments }: Props
                   {formatCurrency(modal.amount - modal.paid, 'MAD')}
                 </p>
               </div>
-              <div className="text-xs text-gray-500 font-inter bg-gray-900/40 border border-gray-800 rounded-lg p-2.5">
-                Le paiement sera enregistré avec le statut <strong className="text-emerald-400">PAID</strong> à la date d&apos;aujourd&apos;hui, saison <strong>{dues.season}</strong>.
+              <div className={`text-xs font-inter border rounded-lg p-2.5 ${
+                modal.status === 'UPCOMING'
+                  ? 'bg-cyan-900/15 border-cyan-700/40 text-cyan-200'
+                  : 'bg-gray-900/40 border-gray-800 text-gray-400'
+              }`}>
+                {modal.status === 'UPCOMING' ? (
+                  <>Ce mois n&apos;est pas encore échu — l&apos;adhérent le règle en avance. Le paiement sera marqué <strong className="text-emerald-400">PAID</strong> dès aujourd&apos;hui pour la saison <strong>{dues.season}</strong>.</>
+                ) : (
+                  <>Le paiement sera enregistré avec le statut <strong className="text-emerald-400">PAID</strong> à la date d&apos;aujourd&apos;hui, saison <strong>{dues.season}</strong>.</>
+                )}
               </div>
               <div className="flex gap-2 pt-2">
                 <button type="button" onClick={() => setModal(null)} disabled={saving}
@@ -224,6 +281,60 @@ export function DuesSection({ memberId, memberName, createdAt, payments }: Props
                         className="btn-primary flex-1 py-2.5 text-sm flex items-center justify-center gap-2">
                   {saving ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
                   {saving ? 'Enregistrement…' : 'Confirmer'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal confirmation RETRAIT (correction d'une saisie erronée) */}
+      {undoLine && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center px-4 bg-black/70 backdrop-blur-sm"
+             onClick={() => !saving && setUndoLine(null)}>
+          <div onClick={e => e.stopPropagation()}
+               className="w-full max-w-md bg-major-black border border-red-700/40 rounded-2xl shadow-2xl overflow-hidden">
+            <div className="bg-red-900/80 px-5 py-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <RotateCcw size={18} className="text-white" />
+                <p className="font-bebas text-white text-base tracking-widest">RETIRER LE PAIEMENT</p>
+              </div>
+              {!saving && (
+                <button onClick={() => setUndoLine(null)} aria-label="Fermer"
+                        className="text-white/70 hover:text-white"><X size={18} /></button>
+              )}
+            </div>
+            <div className="p-5 space-y-4">
+              <div>
+                <p className="text-gray-400 text-xs font-inter uppercase tracking-widest">Membre</p>
+                <p className="text-white font-inter text-sm font-semibold">{memberName}</p>
+              </div>
+              <div>
+                <p className="text-gray-400 text-xs font-inter uppercase tracking-widest">Échéance</p>
+                <p className="text-white font-inter text-sm">{undoLine.label}</p>
+              </div>
+              <div>
+                <p className="text-gray-400 text-xs font-inter uppercase tracking-widest">Montant à retirer</p>
+                <p className="font-bebas text-2xl text-red-400">{formatCurrency(undoLine.paid, 'MAD')}</p>
+                <p className="text-[11px] text-gray-500 font-inter mt-0.5">
+                  {undoLine.paymentIds.length} ligne{undoLine.paymentIds.length > 1 ? 's' : ''} de paiement sera supprimée.
+                </p>
+              </div>
+              <div className="text-xs font-inter bg-red-900/20 border border-red-700/40 rounded-lg p-2.5 flex items-start gap-2 text-red-200">
+                <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" />
+                <span>
+                  Action <strong>définitive</strong>. À utiliser uniquement si le paiement a été saisi par erreur ou si l&apos;adhérent n&apos;a finalement pas réglé.
+                </span>
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button type="button" onClick={() => setUndoLine(null)} disabled={saving}
+                        className="btn-secondary flex-1 py-2.5 text-sm">
+                  Annuler
+                </button>
+                <button type="button" onClick={() => undoPayment(undoLine)} disabled={saving}
+                        className="flex-1 py-2.5 text-sm bg-red-600 hover:bg-red-700 text-white rounded-xl flex items-center justify-center gap-2 transition-colors disabled:opacity-60">
+                  {saving ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                  {saving ? 'Retrait…' : 'Confirmer le retrait'}
                 </button>
               </div>
             </div>

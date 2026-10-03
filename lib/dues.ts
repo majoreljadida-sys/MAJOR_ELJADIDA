@@ -90,6 +90,8 @@ export interface DuesLine {
   paid:       number
   status:     DuesLineStatus
   type:       'ADHESION' | 'COTISATION'
+  /** Ids des Payment PAID liés à cette ligne (pour permettre la correction). */
+  paymentIds: string[]
 }
 
 export interface DuesStatus {
@@ -110,6 +112,7 @@ interface MemberLike {
 }
 
 interface PaymentLike {
+  id?:       string
   type:      string          // 'COTISATION_ANNUELLE' | 'COTISATION_MENSUELLE' | ...
   amount:    number
   status:    string          // 'PAID' | 'PENDING' | ...
@@ -141,20 +144,20 @@ export function computeDuesStatus(
   const nowM = now.getMonth()
 
   // Agréger les paiements PAID de la saison active
-  const seasonPayments = payments.filter(p => p.season === activeSeason && p.status === 'PAID')
-  const paidAdhesion = seasonPayments
-    .filter(p => p.type === 'COTISATION_ANNUELLE')
-    .reduce((s, p) => s + p.amount, 0)
+  const seasonPayments  = payments.filter(p => p.season === activeSeason && p.status === 'PAID')
+  const adhesionPayments = seasonPayments.filter(p => p.type === 'COTISATION_ANNUELLE')
+  const paidAdhesion     = adhesionPayments.reduce((s, p) => s + p.amount, 0)
 
   // Ligne adhésion
   const adhesion: DuesLine = {
-    key:      'ADHESION',
-    label:    'Adhésion annuelle',
-    dueDate:  joinInSeason,
-    amount:   ADHESION_AMOUNT,
-    paid:     Math.min(paidAdhesion, ADHESION_AMOUNT),
-    status:   paidAdhesion >= ADHESION_AMOUNT ? 'PAID' : 'DUE',
-    type:     'ADHESION',
+    key:        'ADHESION',
+    label:      'Adhésion annuelle',
+    dueDate:    joinInSeason,
+    amount:     ADHESION_AMOUNT,
+    paid:       Math.min(paidAdhesion, ADHESION_AMOUNT),
+    status:     paidAdhesion >= ADHESION_AMOUNT ? 'PAID' : 'DUE',
+    type:       'ADHESION',
+    paymentIds: adhesionPayments.map(p => p.id).filter((x): x is string => Boolean(x)),
   }
 
   // Lignes cotisations mensuelles
@@ -188,13 +191,14 @@ export function computeDuesStatus(
     else                    status = paid >= COTISATION_MONTHLY_AMOUNT ? 'PAID' : 'DUE'
 
     monthlyLines.push({
-      key:    `COTISATION_${m.seasonIdx}`,
-      label:  m.label,
-      dueDate: m.monthDate,
-      amount: isBeforeJoin ? 0 : COTISATION_MONTHLY_AMOUNT,
+      key:        `COTISATION_${m.seasonIdx}`,
+      label:      m.label,
+      dueDate:    m.monthDate,
+      amount:     isBeforeJoin ? 0 : COTISATION_MONTHLY_AMOUNT,
       paid,
       status,
-      type:   'COTISATION',
+      type:       'COTISATION',
+      paymentIds: monthPayments.map(p => p.id).filter((x): x is string => Boolean(x)),
     })
   }
 

@@ -50,7 +50,7 @@ export default async function AdminMemberDetailPage({ params }: { params: { id: 
   const currentSeason = getCurrentSeason()
   const seasonPayments = await prisma.payment.findMany({
     where: { memberId: params.id, season: currentSeason },
-    select: { type: true, amount: true, status: true, season: true, paidDate: true, dueDate: true },
+    select: { id: true, type: true, amount: true, status: true, season: true, paidDate: true, dueDate: true },
   })
 
   // Statut certificat médical
@@ -178,6 +178,7 @@ export default async function AdminMemberDetailPage({ params }: { params: { id: 
         memberName={`${member.firstName} ${member.lastName}`}
         createdAt={member.createdAt.toISOString()}
         payments={seasonPayments.map(p => ({
+          id:       p.id,
           type:     p.type,
           amount:   p.amount,
           status:   p.status,
