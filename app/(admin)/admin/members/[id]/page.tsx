@@ -16,6 +16,8 @@ import { getLevel } from '@/lib/sport-levels'
 import { getMotivations } from '@/lib/motivations'
 import { getMemberType, groupAssociationRoles, type MemberTypeKey, type AssociationRoleKey } from '@/lib/association-roles'
 import { AssociationRoleEditor } from './association-role-editor'
+import { DuesSection } from './dues-section'
+import { getCurrentSeason, getSeasonBounds } from '@/lib/dues'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,6 +45,13 @@ export default async function AdminMemberDetailPage({ params }: { params: { id: 
   })
 
   if (!member) notFound()
+
+  // Paiements de la saison en cours (pour la section Cotisations)
+  const currentSeason = getCurrentSeason()
+  const seasonPayments = await prisma.payment.findMany({
+    where: { memberId: params.id, season: currentSeason },
+    select: { type: true, amount: true, status: true, season: true, paidDate: true, dueDate: true },
+  })
 
   // Statut certificat médical
   const now            = new Date()
@@ -161,6 +170,21 @@ export default async function AdminMemberDetailPage({ params }: { params: { id: 
         memberName={`${member.firstName} ${member.lastName}`}
         initialType={((member as any).memberType ?? 'ADHERENT') as MemberTypeKey}
         initialRoles={((member as any).associationRoles ?? []) as AssociationRoleKey[]}
+      />
+
+      {/* Cotisations saison en cours — statut + tableau détaillé */}
+      <DuesSection
+        memberId={member.id}
+        memberName={`${member.firstName} ${member.lastName}`}
+        createdAt={member.createdAt.toISOString()}
+        payments={seasonPayments.map(p => ({
+          type:     p.type,
+          amount:   p.amount,
+          status:   p.status,
+          season:   p.season,
+          paidDate: p.paidDate?.toISOString() ?? null,
+          dueDate:  p.dueDate?.toISOString()  ?? null,
+        }))}
       />
 
       {/* Certificat médical */}

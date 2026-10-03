@@ -8,6 +8,7 @@ import { ExportMembersButton } from './export-button'
 import { getLevel, SPORT_LEVELS } from '@/lib/sport-levels'
 import { getMotivation, getMotivations, MOTIVATIONS } from '@/lib/motivations'
 import { getMemberType, groupAssociationRoles, MEMBER_TYPES } from '@/lib/association-roles'
+import { computeDuesStatus, getCurrentSeason, globalStatusColor } from '@/lib/dues'
 
 interface Props { searchParams: { status?: string; search?: string; level?: string; goal?: string; type?: string } }
 
@@ -31,6 +32,18 @@ export default async function AdminMembersPage({ searchParams }: Props) {
     include: { user: { include: { coach: { select: { id: true } } } }, group: true },
     orderBy: { createdAt: 'desc' },
   })
+
+  // Paiements saison en cours pour calculer le statut cotisations
+  const currentSeason = getCurrentSeason()
+  const seasonPayments = await prisma.payment.findMany({
+    where:  { season: currentSeason, memberId: { in: members.map(m => m.id) } },
+    select: { memberId: true, type: true, amount: true, status: true, season: true, paidDate: true, dueDate: true },
+  })
+  const paymentsByMember = new Map<string, typeof seasonPayments>()
+  for (const p of seasonPayments) {
+    const arr = paymentsByMember.get(p.memberId) ?? []
+    arr.push(p); paymentsByMember.set(p.memberId, arr)
+  }
 
   const counts = await prisma.member.groupBy({ by: ['status'], _count: true })
   const countMap = Object.fromEntries(counts.map(c => [c.status, c._count]))
@@ -174,6 +187,7 @@ export default async function AdminMembersPage({ searchParams }: Props) {
                 <th>Membre</th>
                 <th>Licence</th>
                 <th>Type</th>
+                <th>Cotisation</th>
                 <th>Niveau</th>
                 <th>Objectif</th>
                 <th>Groupe</th>
@@ -186,7 +200,7 @@ export default async function AdminMembersPage({ searchParams }: Props) {
             <tbody>
               {members.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="text-center py-12 text-gray-600 font-inter">
+                  <td colSpan={11} className="text-center py-12 text-gray-600 font-inter">
                     Aucun membre trouvé.
                   </td>
                 </tr>
@@ -210,6 +224,33 @@ export default async function AdminMembersPage({ searchParams }: Props) {
                     </div>
                   </td>
                   <td className="text-gray-400 text-xs font-mono">{m.licenseNumber ?? '—'}</td>
+                  <td>
+                    {(() => {
+                      const payments = (paymentsByMember.get(m.id) ?? []).map(p => ({
+                        type:     p.type,
+                        amount:   p.amount,
+                        status:   p.status,
+                        season:   p.season,
+                        paidDate: p.paidDate,
+                        dueDate:  p.dueDate,
+                      }))
+                      const dues = computeDuesStatus({ id: m.id, createdAt: m.createdAt }, payments)
+                      const g = globalStatusColor(dues.globalStatus)
+                      return (
+                        <div className="flex flex-col gap-0.5">
+                          <span className={`inline-flex items-center gap-0.5 ${g.bg} ${g.text} text-[10px] font-inter font-semibold px-1.5 py-0.5 rounded w-fit`}
+                                title={`Attendu ${dues.expectedTotal} / Payé ${dues.paidTotal}`}>
+                            {g.label}
+                          </span>
+                          {dues.remaining > 0 && (
+                            <span className="text-red-400 text-[10px] font-inter">
+                              -{dues.remaining} MAD
+                            </span>
+                          )}
+                        </div>
+                      )
+                    })()}
+                  </td>
                   <td>
                     {(() => {
                       const typeDef = getMemberType((m as any).memberType)
