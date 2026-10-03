@@ -120,6 +120,7 @@ model User {
   member        Member?
   coach         Coach?
   notifications Notification[]
+  expenses      Expense[]      @relation("ExpenseRecorder")
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
@@ -197,6 +198,70 @@ enum MotivationGoal {
 enum MemberType {
   ADHERENT            // Bénéficie des activités du club
   MEMBRE_ASSOCIATION  // Voix à l'AG, éligible au bureau et aux comités
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Gestion des dépenses de l'association — contrôle de gestion.
+// Chaque dépense est catégorisée, datée, et peut être liée à un
+// événement ou à une séance d'entraînement pour permettre le calcul
+// du coût réel de chaque activité.
+// ─────────────────────────────────────────────────────────────────────
+model Expense {
+  id            String                @id @default(cuid())
+  amount        Float                 // Montant en MAD
+  date          DateTime              // Date effective de la dépense
+  category      ExpenseCategory
+  description   String                // Ex: "Eau 20L x 5 bouteilles"
+  supplier      String?               // Fournisseur
+  paymentMethod ExpensePaymentMethod  @default(CASH)
+  receiptUrl    String?               // URL / photo du reçu (optionnel)
+  notes         String?               @db.Text
+
+  // Liens contextuels (optionnels)
+  eventId             String?
+  event               Event?           @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  trainingSessionId   String?
+  trainingSession     TrainingSession? @relation(fields: [trainingSessionId], references: [id], onDelete: SetNull)
+
+  // Traçabilité
+  recordedById  String
+  recordedBy    User                  @relation("ExpenseRecorder", fields: [recordedById], references: [id])
+
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  @@index([date])
+  @@index([category])
+  @@index([eventId])
+  @@map("expenses")
+}
+
+enum ExpenseCategory {
+  // Entraînement
+  TRAINING_WATER          // Eau pour les séances
+  TRAINING_FRUITS         // Fruits / fruits secs
+  TRAINING_EQUIPMENT      // Petit matériel entraînement
+  // Événements (frais de participation)
+  EVENT_TRANSPORT         // Transport (bus, voiture, taxi)
+  EVENT_HAMMAM            // Hammam
+  EVENT_MEAL              // Repas / déjeuner
+  EVENT_REFRESHMENT       // Ravitaillement départ
+  EVENT_REGISTRATION      // Frais d'inscription
+  EVENT_ACCOMMODATION     // Hébergement
+  // Équipement collectif
+  EQUIPMENT_COLLECTIVE    // Banderoles, drapeaux, matériel club
+  EQUIPMENT_UNIFORM       // Maillots / vêtements
+  // Divers
+  COMMUNICATION           // Flyers, impression, publicité
+  ADMINISTRATION          // Frais administratifs
+  OTHER                   // Autre / divers
+}
+
+enum ExpensePaymentMethod {
+  CASH                    // Espèces
+  BANK_TRANSFER           // Virement bancaire
+  CHECK                   // Chèque
+  CARD                    // Carte bancaire
 }
 
 enum AssociationRole {
@@ -303,6 +368,7 @@ model TrainingSession {
   status          SessionStatus   @default(SCHEDULED)
   presentCount    Int?            @map("present_count")  // compteur de présents (alimenté par script externe)
   attendances     Attendance[]
+  expenses        Expense[]
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
@@ -340,6 +406,7 @@ model Event {
   videoUrl        String?             // URL YouTube de la vidéo du compte-rendu
   status          EventStatus         @default(UPCOMING)
   registrations   EventRegistration[]
+  expenses        Expense[]
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
 
