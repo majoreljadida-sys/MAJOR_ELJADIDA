@@ -65,7 +65,9 @@ export async function PATCH(req: Request, { params }: Params) {
     cin, dateOfBirth, photo,
     sportLevel, motivations,
     emergencyContact, emergencyPhone,
-    memberStatus, // admin-only field
+    memberStatus, // admin-only
+    memberType,       // admin-only : ADHERENT | MEMBRE_ASSOCIATION
+    associationRoles, // admin-only : tableau de rôles (bureau/comités)
   } = body
 
   // Validation du niveau sportif
@@ -85,6 +87,33 @@ export async function PATCH(req: Request, { params }: Params) {
       return NextResponse.json({ error: 'Objectif(s) invalide(s).' }, { status: 400 })
   }
 
+  // Validation classification associative (admin uniquement)
+  let cleanedMemberType: string | undefined
+  let cleanedAssociationRoles: string[] | undefined
+  if ((memberType !== undefined || associationRoles !== undefined) && !isAdmin) {
+    return NextResponse.json({ error: 'Seul un admin peut modifier le type de membre.' }, { status: 403 })
+  }
+  if (memberType !== undefined && memberType !== null && memberType !== '') {
+    const VALID = ['ADHERENT', 'MEMBRE_ASSOCIATION']
+    if (!VALID.includes(memberType))
+      return NextResponse.json({ error: 'Type de membre invalide.' }, { status: 400 })
+    cleanedMemberType = memberType
+  }
+  if (associationRoles !== undefined) {
+    if (!Array.isArray(associationRoles))
+      return NextResponse.json({ error: 'associationRoles doit être un tableau.' }, { status: 400 })
+    const VALID = ['PRESIDENT', 'VICE_PRESIDENT', 'SECRETAIRE', 'TRESORIER', 'MEMBRE_BUREAU',
+                   'COMITE_TECHNIQUE', 'COMITE_COMMUNICATION', 'COMITE_EVENEMENTS', 'COMITE_FINANCIER']
+    cleanedAssociationRoles = Array.from(new Set(associationRoles as string[]))
+    if (!cleanedAssociationRoles.every(r => VALID.includes(r)))
+      return NextResponse.json({ error: 'Rôle(s) association invalide(s).' }, { status: 400 })
+  }
+  // Règle métier : un ADHERENT ne peut pas avoir de rôles
+  const effectiveType = cleanedMemberType ?? (cleanedAssociationRoles && cleanedAssociationRoles.length > 0 ? 'MEMBRE_ASSOCIATION' : undefined)
+  if (effectiveType === 'ADHERENT' && cleanedAssociationRoles && cleanedAssociationRoles.length > 0) {
+    return NextResponse.json({ error: 'Un adhérent ne peut pas avoir de rôles associatifs.' }, { status: 400 })
+  }
+
   try {
     // Update member fields (firstName, lastName, phone are on Member, not User)
     const memberData: any = {}
@@ -99,6 +128,12 @@ export async function PATCH(req: Request, { params }: Params) {
     if (photo             !== undefined) memberData.photo             = photo || null
     if (sportLevel        !== undefined) memberData.sportLevel        = sportLevel || null
     if (cleanedMotivations !== undefined) memberData.motivations      = cleanedMotivations as any
+    if (cleanedMemberType  !== undefined) memberData.memberType        = cleanedMemberType as any
+    if (cleanedAssociationRoles !== undefined) memberData.associationRoles = cleanedAssociationRoles as any
+    // Si on rétrograde vers ADHERENT sans toucher aux rôles → on vide les rôles
+    if (cleanedMemberType === 'ADHERENT' && cleanedAssociationRoles === undefined) {
+      memberData.associationRoles = [] as any
+    }
     if (emergencyContact  !== undefined) memberData.emergencyContact  = emergencyContact || null
     if (emergencyPhone    !== undefined) memberData.emergencyPhone    = emergencyPhone || null
     if (isAdmin && memberStatus !== undefined) memberData.status      = memberStatus

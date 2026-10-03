@@ -7,17 +7,19 @@ import { MemberPhotoCell } from './member-photo-cell'
 import { ExportMembersButton } from './export-button'
 import { getLevel, SPORT_LEVELS } from '@/lib/sport-levels'
 import { getMotivation, getMotivations, MOTIVATIONS } from '@/lib/motivations'
+import { getMemberType, groupAssociationRoles, MEMBER_TYPES } from '@/lib/association-roles'
 
-interface Props { searchParams: { status?: string; search?: string; level?: string; goal?: string } }
+interface Props { searchParams: { status?: string; search?: string; level?: string; goal?: string; type?: string } }
 
 export default async function AdminMembersPage({ searchParams }: Props) {
-  const { status, search, level, goal } = searchParams
+  const { status, search, level, goal, type } = searchParams
 
   const members = await prisma.member.findMany({
     where: {
       ...(status ? { status: status as any } : {}),
       ...(level  ? { sportLevel: level as any } : {}),
       ...(goal   ? { motivations: { has: goal as any } } : {}),
+      ...(type   ? { memberType: type as any } : {}),
       ...(search ? {
         OR: [
           { firstName: { contains: search, mode: 'insensitive' } },
@@ -112,12 +114,13 @@ export default async function AdminMembersPage({ searchParams }: Props) {
       </div>
 
       {/* Filtres par objectif */}
-      <div className="flex flex-wrap gap-2 mb-6">
+      <div className="flex flex-wrap gap-2 mb-2">
         {[null, ...MOTIVATIONS.map(m => m.key)].map(k => {
           const def    = k ? MOTIVATIONS.find(m => m.key === k)! : null
           const params = new URLSearchParams()
           if (status) params.set('status', status)
           if (level)  params.set('level',  level)
+          if (type)   params.set('type',   type)
           if (k)      params.set('goal',   k)
           const active = (goal ?? null) === (k ?? null)
           return (
@@ -136,6 +139,32 @@ export default async function AdminMembersPage({ searchParams }: Props) {
         })}
       </div>
 
+      {/* Filtres par type associatif (ADHERENT / MEMBRE_ASSOCIATION) */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {[null, ...MEMBER_TYPES.map(t => t.key)].map(k => {
+          const def    = k ? MEMBER_TYPES.find(t => t.key === k)! : null
+          const params = new URLSearchParams()
+          if (status) params.set('status', status)
+          if (level)  params.set('level',  level)
+          if (goal)   params.set('goal',   goal)
+          if (k)      params.set('type',   k)
+          const active = (type ?? null) === (k ?? null)
+          return (
+            <Link key={k ?? 'all-types'}
+              href={params.toString() ? `/admin/members?${params}` : '/admin/members'}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-inter border transition-colors ${
+                active
+                  ? def
+                    ? `${def.cardBg} ${def.cardBorder} ${def.chipText} font-semibold`
+                    : 'bg-major-primary/20 border-major-primary text-major-accent font-semibold'
+                  : 'border-gray-800 text-gray-500 hover:border-gray-600 hover:text-white'
+              }`}>
+              {def ? <><span>{def.emoji}</span> {def.label}</> : 'Tous types'}
+            </Link>
+          )
+        })}
+      </div>
+
       {/* Tableau */}
       <div className="card-dark overflow-hidden p-0">
         <div className="overflow-x-auto">
@@ -144,6 +173,7 @@ export default async function AdminMembersPage({ searchParams }: Props) {
               <tr>
                 <th>Membre</th>
                 <th>Licence</th>
+                <th>Type</th>
                 <th>Niveau</th>
                 <th>Objectif</th>
                 <th>Groupe</th>
@@ -156,7 +186,7 @@ export default async function AdminMembersPage({ searchParams }: Props) {
             <tbody>
               {members.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="text-center py-12 text-gray-600 font-inter">
+                  <td colSpan={10} className="text-center py-12 text-gray-600 font-inter">
                     Aucun membre trouvé.
                   </td>
                 </tr>
@@ -180,6 +210,33 @@ export default async function AdminMembersPage({ searchParams }: Props) {
                     </div>
                   </td>
                   <td className="text-gray-400 text-xs font-mono">{m.licenseNumber ?? '—'}</td>
+                  <td>
+                    {(() => {
+                      const typeDef = getMemberType((m as any).memberType)
+                      const { bureau, comites } = groupAssociationRoles((m as any).associationRoles)
+                      const roles = [...bureau, ...comites]
+                      return (
+                        <div className="flex flex-col gap-0.5">
+                          {typeDef && (
+                            <span className={`inline-flex items-center gap-1 ${typeDef.chipBg} ${typeDef.chipText} text-[10px] font-inter font-semibold px-1.5 py-0.5 rounded w-fit`} title={typeDef.description}>
+                              <span>{typeDef.emoji}</span> {typeDef.short}
+                            </span>
+                          )}
+                          {roles.length > 0 && (
+                            <div className="flex flex-wrap gap-0.5">
+                              {roles.map(r => (
+                                <span key={r.key}
+                                  className={`inline-flex items-center gap-0.5 ${r.chipBg} ${r.chipText} text-[9px] font-inter font-semibold px-1 py-0.5 rounded`}
+                                  title={r.label}>
+                                  {r.short}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })()}
+                  </td>
                   <td>
                     {(() => {
                       const lvl = getLevel(m.sportLevel)

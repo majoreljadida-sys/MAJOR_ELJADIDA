@@ -14,6 +14,8 @@ import {
 } from '@/lib/utils'
 import { getLevel } from '@/lib/sport-levels'
 import { getMotivations } from '@/lib/motivations'
+import { getMemberType, groupAssociationRoles, type MemberTypeKey, type AssociationRoleKey } from '@/lib/association-roles'
+import { AssociationRoleEditor } from './association-role-editor'
 
 export const dynamic = 'force-dynamic'
 
@@ -96,6 +98,24 @@ export default async function AdminMemberDetailPage({ params }: { params: { id: 
                   <span>{mot.emoji}</span> {mot.label.toUpperCase()}
                 </span>
               ))}
+              {(() => {
+                const typeDef = getMemberType((member as any).memberType)
+                if (!typeDef) return null
+                return (
+                  <span className={`inline-flex items-center gap-1 ${typeDef.chipBg} ${typeDef.chipText} border ${typeDef.chipBorder} text-xs font-inter font-semibold px-2 py-1 rounded`}>
+                    <span>{typeDef.emoji}</span> {typeDef.label.toUpperCase()}
+                  </span>
+                )
+              })()}
+              {(() => {
+                const { bureau, comites } = groupAssociationRoles((member as any).associationRoles)
+                return [...bureau, ...comites].map(r => (
+                  <span key={r.key}
+                    className={`inline-flex items-center gap-1 ${r.chipBg} ${r.chipText} border ${r.chipBorder} text-xs font-inter font-semibold px-2 py-1 rounded`}>
+                    <span>{r.emoji}</span> {r.label}
+                  </span>
+                ))
+              })()}
               {member.user.coach && (
                 <span className="badge text-xs text-major-cyan bg-major-cyan/10 border-major-cyan/30">
                   COACH{member.user.coach.specialty ? ` · ${member.user.coach.specialty}` : ''}
@@ -134,6 +154,14 @@ export default async function AdminMemberDetailPage({ params }: { params: { id: 
           <Field icon={UserIcon} label="Groupe"            value={member.group?.name ?? null} />
         </div>
       </div>
+
+      {/* Classification associative — édition inline */}
+      <AssociationRoleEditor
+        memberId={member.id}
+        memberName={`${member.firstName} ${member.lastName}`}
+        initialType={((member as any).memberType ?? 'ADHERENT') as MemberTypeKey}
+        initialRoles={((member as any).associationRoles ?? []) as AssociationRoleKey[]}
+      />
 
       {/* Certificat médical */}
       <div className="card-dark mb-6">

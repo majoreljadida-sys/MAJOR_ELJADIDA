@@ -154,6 +154,15 @@ model Member {
   // perte de poids, ou perf + prépa course, etc.). Obligatoire au formulaire
   // d'inscription (au moins 1).
   motivations    MotivationGoal[] @default([])
+  // Classification associative :
+  //   • ADHERENT         → bénéficie des activités (défaut)
+  //   • MEMBRE_ASSOCIATION → peut voter à l'AG, éligible au bureau / aux comités
+  // Seul un MEMBRE_ASSOCIATION peut cumuler des rôles via associationRoles.
+  memberType       MemberType        @default(ADHERENT)
+  // Rôles au sein de l'association (bureau et/ou comités). Multi-sélection.
+  // Vide pour un simple adhérent ; peut contenir plusieurs rôles pour un
+  // membre de l'association impliqué dans plusieurs instances.
+  associationRoles AssociationRole[] @default([])
   // Contact d'urgence — obligatoire à l'inscription (depuis 2026-05).
   // Nullable côté DB pour ne pas casser les membres antérieurs ;
   // l'admin pourra leur demander de compléter.
@@ -183,6 +192,25 @@ enum MotivationGoal {
   WEIGHT_LOSS   // Perte de poids
   PERFORMANCE   // Performance / chrono
   RACE_PREP     // Préparation course (10 km, semi, marathon)
+}
+
+enum MemberType {
+  ADHERENT            // Bénéficie des activités du club
+  MEMBRE_ASSOCIATION  // Voix à l'AG, éligible au bureau et aux comités
+}
+
+enum AssociationRole {
+  // Bureau exécutif
+  PRESIDENT
+  VICE_PRESIDENT
+  SECRETAIRE
+  TRESORIER
+  MEMBRE_BUREAU
+  // Comités
+  COMITE_TECHNIQUE
+  COMITE_COMMUNICATION
+  COMITE_EVENEMENTS
+  COMITE_FINANCIER
 }
 
 // Compteur de visites maison — enregistre chaque page vue côté client

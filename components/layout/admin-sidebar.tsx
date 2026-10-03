@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Users, Calendar, Trophy, CreditCard,
   Bell, Settings, LogOut, ChevronRight, BookOpen,
   Activity, Shield, ExternalLink, Menu, X, User as UserIcon,
-  TrendingUp,
+  TrendingUp, Vote,
 } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
 import { initials } from '@/lib/utils'
@@ -26,6 +26,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/admin/dashboard', icon: LayoutDashboard, label: 'Tableau de bord' },
   { href: '/admin/stats',     icon: TrendingUp,      label: 'Statistiques'    },
   { href: '/admin/members',   icon: Users,           label: 'Adhérents'       },
+  { href: '/admin/association', icon: Vote,          label: 'Association'     },
   { href: '/admin/trainings', icon: Activity,        label: 'Entraînements'   },
   { href: '/admin/programs',  icon: Calendar,        label: 'Programmes'      },
   { href: '/admin/events',    icon: Trophy,          label: 'Événements'      },
