@@ -7,18 +7,19 @@ import { ArrowLeft, Save } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const EVENT_TYPES = [
-  { value: 'RACE',       label: 'Course officielle' },
-  { value: 'TRAINING',   label: 'Sortie entraînement' },
-  { value: 'STAGE',      label: 'Stage / Camp' },
-  { value: 'COMMUNITY',  label: 'Événement communautaire' },
-  { value: 'OTHER',      label: 'Autre' },
+  { value: 'COURSE_OFFICIELLE', label: 'Course officielle' },
+  { value: 'COMPETITION',       label: 'Compétition' },
+  { value: 'SORTIE_RUNNING',    label: 'Sortie running' },
+  { value: 'STAGE',             label: 'Stage / Camp' },
+  { value: 'REGROUPEMENT',      label: 'Regroupement' },
+  { value: 'EVENEMENT_CLUB',    label: 'Événement club' },
 ]
 
 export default function NewEventPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
-    title: '', type: 'RACE', date: '', location: '', description: '',
+    title: '', type: 'COURSE_OFFICIELLE', date: '', location: '', description: '',
     maxParticipants: '', price: '', distance: '', videoUrl: '',
   })
 

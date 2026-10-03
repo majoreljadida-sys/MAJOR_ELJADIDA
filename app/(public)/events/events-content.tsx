@@ -22,9 +22,18 @@ interface Props {
   isLoggedIn: boolean
   isMember:   boolean
   myRegistrations: MyRegistration[]
+  /** Adhésion annuelle réglée pour la saison en cours ? */
+  adhesionPaid?:       boolean
+  /** Montant restant à régler sur l'adhésion. */
+  adhesionRemaining?:  number
+  /** Libellé de la saison en cours (ex: "Saison 2026–2027"). */
+  currentSeasonLabel?: string
 }
 
-export function EventsContent({ upcoming, completed, videos, channelId, isLoggedIn, isMember, myRegistrations }: Props) {
+export function EventsContent({
+  upcoming, completed, videos, channelId, isLoggedIn, isMember, myRegistrations,
+  adhesionPaid = true, adhesionRemaining = 0, currentSeasonLabel = '',
+}: Props) {
   const { t }  = useLanguage()
   const router = useRouter()
   // Map des inscriptions actuelles : eventId → status
@@ -84,6 +93,27 @@ export function EventsContent({ upcoming, completed, videos, channelId, isLogged
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        {/* ── Bandeau adhésion non réglée (membres seulement) ── */}
+        {isMember && !adhesionPaid && (
+          <div className="mb-8 rounded-2xl border border-yellow-700/40 bg-yellow-900/15 p-4 sm:p-5 flex items-start gap-3">
+            <AlertCircle size={22} className="text-yellow-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="font-oswald text-yellow-200 text-sm sm:text-base uppercase tracking-wide font-semibold">
+                Adhésion annuelle non réglée — {currentSeasonLabel}
+              </p>
+              <p className="text-yellow-100/80 text-sm font-inter leading-relaxed mt-1">
+                L&apos;inscription aux événements est <strong>réservée aux adhérents à jour</strong>.
+                Règle les <strong>{adhesionRemaining} DH</strong> restants de ton adhésion
+                auprès du bureau pour pouvoir t&apos;inscrire.
+              </p>
+              <Link href="/member/dashboard"
+                className="inline-flex items-center gap-1.5 mt-2 text-xs font-inter font-semibold text-yellow-200 hover:text-white underline">
+                Voir mon tableau de bord <ArrowRight size={12} />
+              </Link>
+            </div>
+          </div>
+        )}
 
         {/* ── Événements à venir ── */}
         <section className="mb-16">
@@ -145,6 +175,7 @@ export function EventsContent({ upcoming, completed, videos, channelId, isLogged
                         event={event}
                         isLoggedIn={isLoggedIn}
                         isMember={isMember}
+                        adhesionPaid={adhesionPaid}
                         registrationStatus={regs.get(event.id) ?? null}
                         busy={busyId === event.id}
                         onRegister={() => setConfirmEvent(event)}
@@ -253,12 +284,13 @@ export function EventsContent({ upcoming, completed, videos, channelId, isLogged
   )
 }
 
-function RegistrationButton({ event, isLoggedIn, isMember, registrationStatus, busy, onRegister, onCancel }: {
+function RegistrationButton({ event, isLoggedIn, isMember, adhesionPaid, registrationStatus, busy, onRegister, onCancel }: {
   event: EventWithCount
   isLoggedIn: boolean
   isMember:   boolean
   registrationStatus: string | null
   busy: boolean
+  adhesionPaid?: boolean
   onRegister: () => void
   onCancel:   () => void
 }) {
@@ -275,6 +307,18 @@ function RegistrationButton({ event, isLoggedIn, isMember, registrationStatus, b
   if (!isMember) {
     return (
       <span className="text-xs text-gray-500 font-inter italic whitespace-nowrap">Réservé aux adhérents</span>
+    )
+  }
+
+  // Membre dont l'adhésion n'est pas payée → blocage
+  if (adhesionPaid === false && !registrationStatus) {
+    return (
+      <div className="flex flex-col items-end gap-0.5">
+        <span className="inline-flex items-center gap-1 text-xs font-inter font-medium text-yellow-400 whitespace-nowrap">
+          <AlertCircle size={11} /> Adhésion non réglée
+        </span>
+        <span className="text-[10px] text-gray-500 font-inter italic">Règle d&apos;abord ta cotisation</span>
+      </div>
     )
   }
 

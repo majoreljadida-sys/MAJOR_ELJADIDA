@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { ADHESION_AMOUNT, getCurrentSeason, formatSeason } from '@/lib/dues'
 
 type Ctx = { params: { id: string } }
 
@@ -27,6 +28,27 @@ export async function POST(_req: Request, { params }: Ctx) {
       where: { memberId_eventId: { memberId, eventId: event.id } },
     })
     if (existing) return NextResponse.json({ error: 'Tu es déjà inscrit.' }, { status: 400 })
+
+    // Blocage : adhésion annuelle (300 DH) obligatoire pour la saison en cours
+    const currentSeason = getCurrentSeason()
+    const paidAdhesion  = await prisma.payment.aggregate({
+      where: {
+        memberId,
+        season:  currentSeason,
+        status:  'PAID',
+        type:    'COTISATION_ANNUELLE',
+      },
+      _sum: { amount: true },
+    })
+    const adhesionPaid = paidAdhesion._sum.amount ?? 0
+    if (adhesionPaid < ADHESION_AMOUNT) {
+      return NextResponse.json({
+        error: `Adhésion annuelle non réglée pour la ${formatSeason(currentSeason).toLowerCase()}. Règle les ${ADHESION_AMOUNT} DH auprès du bureau pour pouvoir t'inscrire aux événements.`,
+        code:  'ADHESION_REQUIRED',
+        remaining: ADHESION_AMOUNT - adhesionPaid,
+        season:    currentSeason,
+      }, { status: 402 })
+    }
 
     // Confirmé ou liste d'attente selon capacité
     const isFull = event.maxParticipants !== null && event._count.registrations >= event.maxParticipants
