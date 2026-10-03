@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { StatCard } from '@/components/ui/stat-card'
 import { EmailReminders } from '@/components/admin/email-reminders'
 
+export const dynamic = 'force-dynamic'
+
 export default async function AdminDashboardPage() {
   const [
     memberCount, activeMembers, pendingMembers,

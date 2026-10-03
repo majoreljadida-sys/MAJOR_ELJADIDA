@@ -3,6 +3,8 @@ import { formatDate, formatCurrency, PAYMENT_STATUS_LABELS, PAYMENT_TYPE_LABELS,
 import { CreditCard, AlertCircle, TrendingUp, DollarSign } from 'lucide-react'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+
 interface Props { searchParams: { status?: string } }
 
 export default async function AdminPaymentsPage({ searchParams }: Props) {

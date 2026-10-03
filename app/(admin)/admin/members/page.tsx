@@ -10,6 +10,8 @@ import { getMotivation, getMotivations, MOTIVATIONS } from '@/lib/motivations'
 import { getMemberType, groupAssociationRoles, MEMBER_TYPES } from '@/lib/association-roles'
 import { computeDuesStatus, getCurrentSeason, globalStatusColor } from '@/lib/dues'
 
+export const dynamic = 'force-dynamic'
+
 interface Props { searchParams: { status?: string; search?: string; level?: string; goal?: string; type?: string } }
 
 export default async function AdminMembersPage({ searchParams }: Props) {

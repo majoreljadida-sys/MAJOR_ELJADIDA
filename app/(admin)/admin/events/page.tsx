@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { Calendar } from 'lucide-react'
 import { EventsListClient } from './events-list-client'
 
+export const dynamic = 'force-dynamic'
+
 export default async function AdminEventsPage() {
   const events = await prisma.event.findMany({
     orderBy: [{ status: 'asc' }, { date: 'asc' }],
