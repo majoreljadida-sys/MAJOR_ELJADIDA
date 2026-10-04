@@ -192,7 +192,7 @@ export default async function AdminMembersPage({ searchParams }: Props) {
                 <th>Cotisation</th>
                 <th>Niveau</th>
                 <th>Objectif</th>
-                <th>Groupe</th>
+                <th>Ville</th>
                 <th>Certificat</th>
                 <th>Statut</th>
                 <th>Inscrit le</th>
@@ -310,7 +310,7 @@ export default async function AdminMembersPage({ searchParams }: Props) {
                       )
                     })()}
                   </td>
-                  <td className="text-gray-400 text-sm">{m.group?.name ?? '—'}</td>
+                  <td className="text-gray-400 text-sm">{m.placeOfBirth ?? <span className="text-gray-600 italic">—</span>}</td>
                   <td>
                     {m.medicalCertUrl
                       ? <a href={m.medicalCertUrl} target="_blank" rel="noopener noreferrer"
