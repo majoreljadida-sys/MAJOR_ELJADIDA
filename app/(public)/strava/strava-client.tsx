@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Users, Activity, TrendingUp, ExternalLink, MapPin, Trophy, Medal, Info } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
+import { useLanguage } from '@/lib/i18n/context'
 import type { StravaClub, StravaActivity, StravaMember, WeeklyStat } from '@/lib/strava'
 
 function formatDistance(meters: number) { return (meters / 1000).toFixed(1) + ' km' }
@@ -36,29 +37,65 @@ interface Props {
   isInStravaClub: boolean
 }
 
-const NOT_CONFIGURED = (clubUrl: string) => (
-  <div className="min-h-screen bg-major-black flex items-center justify-center p-8">
-    <div className="text-center max-w-md">
-      <div className="text-6xl mb-6">🏃</div>
-      <h2 className="font-bebas text-3xl text-white tracking-widest mb-3">STRAVA — CLUB MAJOR</h2>
-      <p className="text-gray-400 font-inter text-sm mb-6 leading-relaxed">
-        L'intégration Strava n'est pas encore configurée.<br />
-        Ajoutez les variables <code className="text-major-accent">STRAVA_CLIENT_ID</code>,{' '}
-        <code className="text-major-accent">STRAVA_CLIENT_SECRET</code> et{' '}
-        <code className="text-major-accent">STRAVA_REFRESH_TOKEN</code> dans votre fichier <code className="text-major-accent">.env</code>.
-      </p>
-      <a href={clubUrl} target="_blank" rel="noopener noreferrer"
-        className="btn-primary inline-flex items-center gap-2">
-        <ExternalLink size={16} /> Voir le club sur Strava
-      </a>
+// Depuis le 1er septembre 2026, l'API Strava ne fournit plus les activités ni
+// les membres des clubs : la page invite simplement à rejoindre le club MAJOR
+// dans l'application Strava, où le classement et les sorties restent visibles.
+const TXT = {
+  fr: {
+    tag: 'Communauté', title: 'MAJOR SUR STRAVA',
+    desc: "Retrouvez toutes les sorties du club, le classement de la semaine et les encouragements des MAJORistes directement dans l'application Strava.",
+    steps: [
+      ["Installez l'application Strava", 'Gratuite, sur Android et iPhone.'],
+      ['Rejoignez le club MAJOR', 'Un clic sur le bouton ci-dessous.'],
+      ['Enregistrez vos sorties', 'Elles apparaissent dans le classement du club.'],
+    ],
+    cta: 'Rejoindre le club sur Strava',
+  },
+  ar: {
+    tag: 'مجتمعنا', title: 'ماجور على ستراڤا',
+    desc: 'تابع كل خرجات النادي، وترتيب الأسبوع، وتشجيعات الماجوريين مباشرة على تطبيق سترافا.',
+    steps: [
+      ['ثبّت تطبيق سترافا', 'مجاني على أندرويد وآيفون.'],
+      ['انضم إلى نادي ماجور', 'بنقرة واحدة على الزر أسفله.'],
+      ['سجّل خرجاتك', 'تظهر في ترتيب النادي.'],
+    ],
+    cta: 'انضم إلى النادي على سترافا',
+  },
+}
+
+function RejoindreStrava({ clubUrl }: { clubUrl: string }) {
+  const { lang } = useLanguage()
+  const t = TXT[lang === 'ar' ? 'ar' : 'fr']
+  return (
+    <div className="min-h-screen bg-major-black flex items-center justify-center px-4 py-16">
+      <div className="w-full max-w-xl text-center">
+        <p className="text-major-accent font-inter text-xs uppercase tracking-[0.3em] mb-3">{t.tag}</p>
+        <h1 className="font-bebas text-4xl sm:text-5xl text-white tracking-widest mb-4">{t.title}</h1>
+        <p className="text-gray-300 font-inter text-sm sm:text-base leading-relaxed mb-10">{t.desc}</p>
+        <ol className="space-y-3 mb-10 text-start">
+          {t.steps.map(([titre, detail], i) => (
+            <li key={i} className="flex items-start gap-4 p-4 rounded-2xl bg-major-surface border border-major-primary/20">
+              <span className="flex-shrink-0 w-9 h-9 rounded-full bg-[#FC4C02] text-white font-bebas text-xl flex items-center justify-center">{i + 1}</span>
+              <span>
+                <span className="block text-white font-inter font-semibold text-sm">{titre}</span>
+                <span className="block text-gray-400 font-inter text-xs mt-0.5">{detail}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
+        <a href={clubUrl} target="_blank" rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-[#FC4C02] hover:bg-[#e04402] text-white font-inter font-semibold text-sm transition-colors">
+          <ExternalLink size={16} /> {t.cta}
+        </a>
+      </div>
     </div>
-  </div>
-)
+  )
+}
 
 export function StravaPageClient({ club, activities, members, weeklyStats, clubUrl, isInStravaClub }: Props) {
   const [tab, setTab] = useState<'weekly' | 'activities' | 'members'>('weekly')
 
-  if (!club) return NOT_CONFIGURED(clubUrl)
+  if (!club) return <RejoindreStrava clubUrl={clubUrl} />
 
   // Stats agrégées
   const totalKm      = activities.reduce((s, a) => s + a.distance, 0)
