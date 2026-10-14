@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
@@ -11,12 +11,23 @@ import {
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 
 const NAV = [
-  { href: '/member/dashboard',     icon: LayoutDashboard, label: 'Tableau de bord' },
-  { href: '/member/profile',       icon: User,            label: 'Mon profil'       },
-  { href: '/member/mon-programme', icon: Sparkles,        label: 'Mon programme'    },
-  { href: '/member/payments',      icon: CreditCard,      label: 'Mes paiements'    },
-  { href: '/events',               icon: Calendar,        label: 'Événements'       },
+  { href: '/member/dashboard',     icon: LayoutDashboard, label: 'Tableau de bord', labelAr: 'لوحة التحكم' },
+  { href: '/member/profile',       icon: User,            label: 'Mon profil',      labelAr: 'ملفي'        },
+  { href: '/member/mon-programme', icon: Sparkles,        label: 'Mon programme',   labelAr: 'برنامجي'     },
+  { href: '/member/payments',      icon: CreditCard,      label: 'Mes paiements',   labelAr: 'مدفوعاتي'    },
+  { href: '/events',               icon: Calendar,        label: 'Événements',      labelAr: 'الفعاليات'   },
 ]
+
+// Langue choisie sur le site public (bouton FR/AR), mémorisée dans le navigateur.
+// L'espace membre reste en mise en page gauche→droite : seuls les libellés
+// du menu passent en arabe.
+function useSiteLang(): 'fr' | 'ar' {
+  const [lang, setLang] = useState<'fr' | 'ar'>('fr')
+  useEffect(() => {
+    try { if (localStorage.getItem('lang') === 'ar') setLang('ar') } catch {}
+  }, [])
+  return lang
+}
 
 export function MemberSidebar() {
   const pathname = usePathname()
@@ -24,6 +35,8 @@ export function MemberSidebar() {
   const name  = session?.user?.name  ?? 'Membre'
   const photo = session?.user?.image ?? null
   const [open, setOpen] = useState(false)
+  const lang = useSiteLang()
+  const isAr = lang === 'ar'
 
   const initials = name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
 
@@ -44,11 +57,11 @@ export function MemberSidebar() {
             : <span>{initials}</span>}
         </div>
         <p className="text-white text-sm font-inter font-semibold truncate w-full">{name}</p>
-        <p className="text-gray-500 text-[11px] font-inter uppercase tracking-widest mt-0.5">Membre</p>
+        <p className="text-gray-500 text-[11px] font-inter uppercase tracking-widest mt-0.5">{isAr ? 'عضو' : 'Membre'}</p>
       </div>
 
       <nav className="flex-1 overflow-y-auto p-3 space-y-1">
-        {NAV.map(({ href, icon: Icon, label }) => {
+        {NAV.map(({ href, icon: Icon, label, labelAr }) => {
           const active = pathname === href || pathname.startsWith(href + '/')
           return (
             <Link key={href} href={href} onClick={() => setOpen(false)}
@@ -56,7 +69,7 @@ export function MemberSidebar() {
                 active ? 'bg-major-primary/15 text-major-accent border border-major-primary/30' : 'text-gray-400 hover:text-white hover:bg-white/5'
               }`}>
               <Icon size={17} />
-              <span className="flex-1">{label}</span>
+              <span className="flex-1" dir={isAr ? 'rtl' : undefined}>{isAr ? labelAr : label}</span>
               {active && <ChevronRight size={14} className="opacity-50" />}
             </Link>
           )
@@ -67,7 +80,7 @@ export function MemberSidebar() {
         <ThemeToggle className="w-full justify-center" />
         <button onClick={() => signOut({ callbackUrl: '/' })}
           className="flex items-center justify-center gap-2 text-gray-500 hover:text-red-400 transition-colors text-xs font-inter w-full py-2">
-          <LogOut size={14} /> Se déconnecter
+          <LogOut size={14} /> {isAr ? 'تسجيل الخروج' : 'Se déconnecter'}
         </button>
       </div>
     </>

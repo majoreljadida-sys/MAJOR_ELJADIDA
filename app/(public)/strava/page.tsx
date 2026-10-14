@@ -11,17 +11,23 @@ function normalize(s: string | null | undefined) {
 }
 
 export default async function StravaPage() {
+  // Chaque source est isolée : une panne Strava ou base de données ne doit
+  // jamais faire tomber toute la page (erreur 500) — on affiche ce qui répond.
+  const safe = async <T,>(p: Promise<T>, fallback: T, label: string): Promise<T> => {
+    try { return await p } catch (e) { console.error(`[strava] ${label}:`, e); return fallback }
+  }
+
   const [club, activities, members, weeklyStats, session, dbMembers] = await Promise.all([
-    getClubInfo(),
-    getClubActivities(20),
-    getClubMembers(50),
-    getWeeklyStats(),
-    auth(),
+    safe<Awaited<ReturnType<typeof getClubInfo>>>(getClubInfo(), null, 'clubInfo'),
+    safe(getClubActivities(20), [], 'activities'),
+    safe(getClubMembers(50), [], 'members'),
+    safe(getWeeklyStats(), [], 'weeklyStats'),
+    safe(auth().catch(() => null), null, 'auth'),
     // Tous les membres du club MAJOR (DB) — utilisé pour récupérer les
     // photos puisque Strava ne les expose pas via l'API publique.
-    prisma.member.findMany({
+    safe(prisma.member.findMany({
       select: { firstName: true, lastName: true, photo: true },
-    }),
+    }), [] as { firstName: string; lastName: string; photo: string | null }[], 'dbMembers'),
   ])
 
   // Enrichit chaque membre Strava avec sa photo MAJOR si on retrouve
@@ -46,10 +52,10 @@ export default async function StravaPage() {
   // Détecte si l'utilisateur connecté est déjà dans le club Strava
   let isInStravaClub = false
   if (session?.user?.id) {
-    const member = await prisma.member.findFirst({
+    const member = await safe<{ firstName: string; lastName: string } | null>(prisma.member.findFirst({
       where:  { userId: session.user.id },
       select: { firstName: true, lastName: true },
-    })
+    }), null, 'currentMember')
     if (member) {
       const myFirst    = normalize(member.firstName)
       const myLastInit = normalize(member.lastName).charAt(0)

@@ -134,7 +134,7 @@ const fr = {
 
   // ── Événements ───────────────────────────────────────────────────
   events: {
-    tag:       'Agenda 2025',
+    tag:       'Agenda 2026',
     title:     'ÉVÉNEMENTS DU CLUB',
     desc:      'Courses officielles, stages, sorties running et événements — retrouvez tout le programme du Club MAJOR.',
     upcoming:  'À VENIR',
