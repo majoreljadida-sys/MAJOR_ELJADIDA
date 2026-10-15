@@ -1,3 +1,4 @@
+import { requireEnv } from './_env'
 // ⚠️  DESTRUCTIF — Supprime TOUS les paiements (local + prod).
 //
 // Usage :
@@ -10,7 +11,7 @@
 
 import { PrismaClient } from '@prisma/client'
 
-const PROD_URL  = 'postgresql://neondb_owner:npg_F4WBLe6rxZTm@ep-sweet-unit-amybnzup-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require'
+const PROD_URL  = requireEnv('PROD_DATABASE_URL')
 const LOCAL_URL = 'postgresql://postgres:Major@localhost:5432/clubmajor'
 
 const CONFIRM_TOKEN = 'OUI_JE_SUPPRIME_TOUT'

@@ -1,3 +1,4 @@
+import { requireEnv } from './_env'
 // Seed du programme "Cap sur le semi de Casablanca" — octobre 2026.
 // 3 semaines × 4 séances (A lun/mar · B mer/jeu · C ven/sam · D dimanche).
 // Les allures sont déclinées sur les 4 niveaux VMA du site :
@@ -12,7 +13,7 @@
 
 import { PrismaClient } from '@prisma/client'
 
-const PROD_URL  = 'postgresql://neondb_owner:npg_F4WBLe6rxZTm@ep-sweet-unit-amybnzup-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require'
+const PROD_URL  = process.argv.includes('--prod') ? requireEnv('PROD_DATABASE_URL') : ''
 const LOCAL_URL = 'postgresql://postgres:Major@localhost:5432/clubmajor'
 
 const isProd = process.argv.includes('--prod')

@@ -20,10 +20,34 @@
       "WebFetch(domain:hautmorocco.com)",
       "Bash(node -e 'const { PrismaClient } = require\\('\\\\''@prisma/client'\\\\''\\); const p = new PrismaClient\\(\\); p.blogCategory.findMany\\(\\).then\\(c => { console.log\\(JSON.stringify\\(c, null, 2\\)\\); p.$disconnect\\(\\) }\\)')",
       "Read(//c/Users/LENOVO/**)",
-      "Read(//c/Users/LENOVO/Downloads/**)"
+      "Read(//c/Users/LENOVO/Downloads/**)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(npx next *)",
+      "Bash(DATABASE_URL='<PROD_DATABASE_URL>' npx prisma db push --accept-data-loss --skip-generate)",
+      "Bash(DATABASE_URL='<PROD_DATABASE_URL>' npx prisma db push --skip-generate)",
+      "PowerShell($bytes = New-Object byte[] 32; [System.Security.Cryptography.RandomNumberGenerator]::Fill\\($bytes\\); $hex = \\($bytes | ForEach-Object { $_.ToString\\('x2'\\) }\\) -join ''; Write-Output $hex)",
+      "PowerShell($bytes = New-Object byte[] 32; $rng = [System.Security.Cryptography.RNGCryptoServiceProvider]::new\\(\\); $rng.GetBytes\\($bytes\\); $rng.Dispose\\(\\); $hex = \\($bytes | ForEach-Object { $_.ToString\\('x2'\\) }\\) -join ''; Write-Output $hex)",
+      "Bash(git commit *)",
+      "Bash(git ls-remote *)",
+      "Bash(curl -X POST \"https://api.vercel.com/v1/integrations/deploy/prj_cNBh4u3QwvDZIt6YUngvYkvDvuVP/qgyQzKx2Mt\")",
+      "Bash(npm install *)",
+      "Bash(cp \"e:/Site_Major/Hymne de la communauté MAJOR V7.mp3\" \"e:/Site_Major/public/hymne-major.mp3\" && ls -la \"e:/Site_Major/public/hymne-major.mp3\")",
+      "Bash(awk 'NR>=218 && NR<=235' \"e:/Site_Major/public/MAJOR_overlay_OBS.html\")",
+      "Bash(awk 'NR>=232 && NR<=267' \"e:/Site_Major/public/MAJOR_overlay_OBS.html\")",
+      "Bash(awk 'NR>=100 && NR<=180' \"e:/Site_Major/public/MAJOR_overlay_OBS_chant_seul.html\")",
+      "Bash(awk 'NR>=130 && NR<=160' \"e:/Site_Major/public/MAJOR_overlay_OBS_chant_seul.html\")",
+      "Bash(awk 'NR>=120 && NR<=135' \"e:/Site_Major/public/MAJOR_overlay_OBS_chant_seul.html\")",
+      "Bash(awk 'NR>=160 && NR<=237' \"e:/Site_Major/public/MAJOR_overlay_OBS_chant_seul.html\")",
+      "Bash(tasklist)",
+      "Bash(rm -f /tmp/check-motiv.ts)",
+      "Bash(rm scripts/check-motivations.ts)",
+      "Bash(npx tsc *)"
     ],
     "additionalDirectories": [
-      "C:\\Users\\LENOVO\\Downloads"
+      "C:\\Users\\LENOVO\\Downloads",
+      "e:\\Site_Major"
     ]
   }
 }

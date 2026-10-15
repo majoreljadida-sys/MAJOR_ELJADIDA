@@ -1,6 +1,7 @@
+// Lancer avec : node --env-file=.env migrate-to-neon.mjs
 import { PrismaClient } from '@prisma/client'
 const L=new PrismaClient({datasources:{db:{url:'postgresql://postgres:Major@localhost:5432/clubmajor'}}})
-const N=new PrismaClient({datasources:{db:{url:'postgresql://neondb_owner:npg_F4WBLe6rxZTm@ep-sweet-unit-amybnzup-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require'}}})
+const N=new PrismaClient({datasources:{db:{url:process.env.PROD_DATABASE_URL}}})
 async function main(){
   const c=await L.blogCategory.findMany()
   for(const x of c)await N.blogCategory.upsert({where:{slug:x.slug},update:x,create:x})

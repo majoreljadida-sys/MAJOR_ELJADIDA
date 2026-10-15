@@ -1,3 +1,4 @@
+import { requireEnv } from './_env'
 // Migration ponctuelle PROD : ajoute les colonnes `memberType` et
 // `associationRoles` sur la table members, avec défaut ADHERENT + [].
 //
@@ -6,7 +7,7 @@
 
 import { PrismaClient } from '@prisma/client'
 
-const PROD_URL = 'postgresql://neondb_owner:npg_F4WBLe6rxZTm@ep-sweet-unit-amybnzup-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require'
+const PROD_URL = requireEnv('PROD_DATABASE_URL')
 
 const prod = new PrismaClient({ datasourceUrl: PROD_URL })
 
