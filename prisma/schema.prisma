@@ -174,6 +174,7 @@ model Member {
   group          TrainingGroup?      @relation(fields: [groupId], references: [id])
   payments       Payment[]
   registrations  EventRegistration[]
+  storeOrders    StoreOrder[]
   attendances    Attendance[]
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
@@ -588,4 +589,74 @@ model WhatsappNotification {
   @@index([sentAt])
   @@index([type, refId])
   @@map("whatsapp_notifications")
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Store MAJOR — articles du club vendus à prix coûtant (sans bénéfice)
+// aux adhérents et membres. Les commandes sont regroupées par l'admin
+// pour passer une commande groupée au fournisseur.
+// ─────────────────────────────────────────────────────────────────────
+enum StoreOrderStatus {
+  NEW        // Reçue
+  CONFIRMED  // Confirmée par le club (ajoutée à la commande groupée)
+  PAID       // Réglée par l'adhérent
+  DELIVERED  // Remise à l'adhérent
+  CANCELLED  // Annulée
+}
+
+model StoreProduct {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  category      String               // TEXTILE | ACCESSOIRE
+  name          String
+  nameAr        String?
+  description   String   @db.Text
+  descriptionAr String?  @db.Text
+  features      String[] @default([])
+  featuresAr    String[] @default([])
+  sizes         String[] @default([]) // vide = taille unique
+  price         Float?               // prix coûtant en MAD — null = à confirmer
+  image         String               // /store/xxx.jpg
+  imageBack     String?
+  active        Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  items         StoreOrderItem[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("store_products")
+}
+
+model StoreOrder {
+  id         String           @id @default(cuid())
+  reference  String           @unique  // ex. CMD-2026-0007
+  memberId   String
+  member     Member           @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  status     StoreOrderStatus @default(NEW)
+  total      Float
+  note       String?          @db.Text  // message de l'adhérent
+  adminNote  String?          @db.Text
+  items      StoreOrderItem[]
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@index([status])
+  @@index([memberId])
+  @@map("store_orders")
+}
+
+model StoreOrderItem {
+  id          String       @id @default(cuid())
+  orderId     String
+  order       StoreOrder   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String
+  product     StoreProduct @relation(fields: [productId], references: [id])
+  productName String                   // copie du nom au moment de la commande
+  size        String?
+  quantity    Int
+  unitPrice   Float
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("store_order_items")
 }

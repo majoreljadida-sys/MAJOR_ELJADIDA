@@ -225,3 +225,76 @@ export async function sendEventReminderEmail(
   `)
   await sendMail(to, `🏃 Rappel : ${eventTitle} — Club MAJOR`, html)
 }
+
+// ── Store MAJOR : commande d'articles ───────────────────────────────────────
+function esc(s: string) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+export interface StoreOrderEmailData {
+  reference: string
+  total:     number
+  note:      string | null
+  member:    { firstName: string; lastName: string; email: string; phone: string | null }
+  items:     { productName: string; size: string | null; quantity: number; unitPrice: number }[]
+}
+
+function storeItemsTable(o: StoreOrderEmailData) {
+  const dh = (n: number) => `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }).format(n)} DH`
+  const rows = o.items.map(i => `
+    <tr>
+      <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;font-size:13px;color:#111827;">${esc(i.productName)}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;font-size:13px;color:#374151;text-align:center;">${i.size ? esc(i.size) : '—'}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;font-size:13px;color:#374151;text-align:center;">${i.quantity}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;font-size:13px;color:#111827;text-align:right;">${dh(i.unitPrice * i.quantity)}</td>
+    </tr>`).join('')
+  return `<table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;margin:20px 0;">
+    <tr style="background:#f0fdf4;">
+      <th style="padding:10px 12px;font-size:11px;color:#166534;text-align:left;text-transform:uppercase;">Article</th>
+      <th style="padding:10px 12px;font-size:11px;color:#166534;text-transform:uppercase;">Taille</th>
+      <th style="padding:10px 12px;font-size:11px;color:#166534;text-transform:uppercase;">Qté</th>
+      <th style="padding:10px 12px;font-size:11px;color:#166534;text-align:right;text-transform:uppercase;">Montant</th>
+    </tr>
+    ${rows}
+    <tr>
+      <td colspan="3" style="padding:12px;font-size:14px;font-weight:700;color:#111827;text-align:right;">Total (prix coûtant)</td>
+      <td style="padding:12px;font-size:14px;font-weight:800;color:#2d8c6e;text-align:right;">${dh(o.total)}</td>
+    </tr>
+  </table>`
+}
+
+/** Email au club : nouvelle commande reçue. */
+export async function sendStoreOrderToClub(to: string, o: StoreOrderEmailData) {
+  const name = `${o.member.firstName} ${o.member.lastName}`
+  const html = layout(`Nouvelle commande Store — ${o.reference}`, `
+    <p style="color:#374151;font-size:14px;line-height:1.7;margin:0 0 8px;">
+      <strong>${esc(name)}</strong> vient de passer une commande sur le Store MAJOR.
+    </p>
+    ${info([
+      ['Référence', o.reference],
+      ['Adhérent', esc(name)],
+      ['Email', esc(o.member.email)],
+      ['Téléphone', o.member.phone ? esc(o.member.phone) : '—'],
+    ])}
+    ${storeItemsTable(o)}
+    ${o.note ? `<p style="color:#374151;font-size:13px;line-height:1.6;background:#f9fafb;border-left:3px solid #2d8c6e;padding:12px 16px;margin:0 0 20px;"><strong>Message :</strong><br>${esc(o.note).replace(/\n/g, '<br>')}</p>` : ''}
+    ${btn(`${BASE_URL}/admin/store`, 'Gérer les commandes')}
+  `)
+  await sendMail(to, `🛍️ Commande ${o.reference} — ${name}`, html)
+}
+
+/** Email à l'adhérent : accusé de réception de sa commande. */
+export async function sendStoreOrderToMember(o: StoreOrderEmailData) {
+  const html = layout('Commande bien reçue !', `
+    <p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 16px;">
+      Bonjour <strong>${esc(o.member.firstName)}</strong>,
+    </p>
+    <p style="color:#374151;font-size:14px;line-height:1.7;margin:0 0 8px;">
+      Ta commande <strong>${o.reference}</strong> est bien enregistrée. Les articles sont vendus à prix coûtant, sans bénéfice pour le club.
+      Le club regroupe les commandes avant de les passer au fournisseur : nous te contacterons pour le règlement et la remise.
+    </p>
+    ${storeItemsTable(o)}
+    ${btn(`${BASE_URL}/member/commandes`, 'Suivre ma commande')}
+  `)
+  await sendMail(o.member.email, `🛍️ Ta commande ${o.reference} — Store MAJOR`, html)
+}

@@ -6,16 +6,19 @@ import { usePathname } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import { Logo } from '@/components/ui/logo'
 import {
-  LayoutDashboard, User, CreditCard, Calendar, LogOut, ChevronRight, Menu, X, Sparkles,
+  LayoutDashboard, User, CreditCard, Calendar, LogOut, ChevronRight, Menu, X, Sparkles, ShoppingBag, Home, ArrowLeft,
 } from 'lucide-react'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 
 const NAV = [
+  { href: '/',                     icon: Home,            label: 'Retour au site',  labelAr: 'العودة إلى الموقع' },
   { href: '/member/dashboard',     icon: LayoutDashboard, label: 'Tableau de bord', labelAr: 'لوحة التحكم' },
   { href: '/member/profile',       icon: User,            label: 'Mon profil',      labelAr: 'ملفي'        },
   { href: '/member/mon-programme', icon: Sparkles,        label: 'Mon programme',   labelAr: 'برنامجي'     },
   { href: '/member/payments',      icon: CreditCard,      label: 'Mes paiements',   labelAr: 'مدفوعاتي'    },
+  { href: '/member/commandes',     icon: ShoppingBag,     label: 'Mes commandes',   labelAr: 'طلباتي'      },
   { href: '/events',               icon: Calendar,        label: 'Événements',      labelAr: 'الفعاليات'   },
+  { href: '/store',                icon: ShoppingBag,     label: 'Store',           labelAr: 'المتجر'      },
 ]
 
 // Langue choisie sur le site public (bouton FR/AR), mémorisée dans le navigateur.
@@ -43,7 +46,9 @@ export function MemberSidebar() {
   const sidebarContent = (
     <>
       <div className="p-5 border-b border-gray-800 flex items-center justify-between">
-        <Logo size={48} showText textSize="md" />
+        <Link href="/" onClick={() => setOpen(false)} aria-label="Retour au site">
+          <Logo size={48} showText textSize="md" />
+        </Link>
         <button onClick={() => setOpen(false)} className="lg:hidden text-gray-500 hover:text-white">
           <X size={20} />
         </button>
@@ -62,7 +67,24 @@ export function MemberSidebar() {
 
       <nav className="flex-1 overflow-y-auto p-3 space-y-1">
         {NAV.map(({ href, icon: Icon, label, labelAr }) => {
-          const active = pathname === href || pathname.startsWith(href + '/')
+          // Pour '/', comparaison exacte (sinon toujours actif car tout commence par '/')
+          const active = href === '/'
+            ? pathname === '/'
+            : pathname === href || pathname.startsWith(href + '/')
+          // Lien "Retour au site" mis en avant : fond vert MAJOR + icône accent
+          const isBackToSite = href === '/'
+          if (isBackToSite) {
+            return (
+              <div key={href} className="pb-3 mb-2 border-b border-gray-800">
+                <Link href={href} onClick={() => setOpen(false)}
+                  className="group flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-inter font-bold tracking-wide uppercase bg-major-primary text-white border border-major-primary hover:bg-major-dark hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-major-primary/40 ring-1 ring-major-accent/30">
+                  <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+                  <span className="flex-1" dir={isAr ? 'rtl' : undefined}>{isAr ? labelAr : label}</span>
+                  <Home size={14} className="opacity-80" />
+                </Link>
+              </div>
+            )
+          }
           return (
             <Link key={href} href={href} onClick={() => setOpen(false)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-inter transition-all ${

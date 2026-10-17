@@ -72,20 +72,8 @@ export default function ContactPage() {
 
           {/* Infos */}
           <div className="lg:col-span-2 space-y-5">
-            {INFO.map(({ icon: Icon, label, value }) => (
-              <div key={label} className="flex items-start gap-4 card-dark">
-                <div className="w-10 h-10 rounded-xl bg-major-primary/10 flex items-center justify-center flex-shrink-0">
-                  <Icon size={18} className="text-major-accent" />
-                </div>
-                <div>
-                  <p className="text-gray-500 text-xs font-inter uppercase tracking-widest mb-0.5">{label}</p>
-                  <p className="text-white font-inter text-sm font-medium">{value}</p>
-                </div>
-              </div>
-            ))}
-
             {/* Réseaux sociaux */}
-            <div className="card-dark">
+            <div className="card-dark border-major-primary/40">
               <p className="text-gray-500 text-xs font-inter uppercase tracking-widest mb-4">Suivez-nous</p>
               <div className="space-y-2.5">
                 {SOCIALS.map(({ name, handle, href, Icon, classes }) => (
@@ -101,6 +89,18 @@ export default function ContactPage() {
                 ))}
               </div>
             </div>
+
+            {INFO.map(({ icon: Icon, label, value }) => (
+              <div key={label} className="flex items-start gap-4 card-dark">
+                <div className="w-10 h-10 rounded-xl bg-major-primary/10 flex items-center justify-center flex-shrink-0">
+                  <Icon size={18} className="text-major-accent" />
+                </div>
+                <div>
+                  <p className="text-gray-500 text-xs font-inter uppercase tracking-widest mb-0.5">{label}</p>
+                  <p className="text-white font-inter text-sm font-medium">{value}</p>
+                </div>
+              </div>
+            ))}
 
             {/* Map placeholder */}
             <div className="rounded-2xl overflow-hidden border border-major-primary/20 h-48 bg-major-surface flex items-center justify-center">

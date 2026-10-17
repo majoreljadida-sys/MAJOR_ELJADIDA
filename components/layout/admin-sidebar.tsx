@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Users, Calendar, Trophy, CreditCard,
   Bell, Settings, LogOut, ChevronRight, BookOpen,
   Activity, Shield, ExternalLink, Menu, X, User as UserIcon,
-  TrendingUp, Vote, Receipt, Scale,
+  TrendingUp, Vote, Receipt, Scale, ShoppingBag,
 } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
 import { initials } from '@/lib/utils'
@@ -33,6 +33,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/admin/payments',  icon: CreditCard,      label: 'Paiements'       },
   { href: '/admin/expenses',  icon: Receipt,         label: 'Dépenses'        },
   { href: '/admin/finances',  icon: Scale,           label: 'Finances'        },
+  { href: '/admin/store',     icon: ShoppingBag,     label: 'Store'           },
   { href: '/admin/blog',      icon: BookOpen,        label: 'Blog'            },
   { href: '/admin/notifications', icon: Bell,        label: 'Notifications'   },
 ]

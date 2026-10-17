@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Sun, Moon } from 'lucide-react'
 
-export function ThemeToggle({ className = '' }: { className?: string }) {
+export function ThemeToggle({ className = '', labelClassName = '' }: { className?: string; labelClassName?: string }) {
   const [light, setLight] = useState(false)
 
   useEffect(() => {
@@ -37,8 +37,8 @@ export function ThemeToggle({ className = '' }: { className?: string }) {
       } ${className}`}
     >
       {light
-        ? <><Moon size={13} /> Sombre</>
-        : <><Sun  size={13} /> Clair</>
+        ? <><Moon size={13} /> <span className={labelClassName}>Sombre</span></>
+        : <><Sun  size={13} /> <span className={labelClassName}>Clair</span></>
       }
     </button>
   )
